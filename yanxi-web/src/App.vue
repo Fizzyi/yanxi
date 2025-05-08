@@ -14,6 +14,8 @@ import Footer from './components/Footer.vue'
           <router-link to="/about">About</router-link> |
           <router-link to="/courses">Courses</router-link> |
           <router-link to="/resources">Resources</router-link>
+          <router-link class="nav-btn nav-login" to="/login">Log In</router-link>
+          <router-link class="nav-btn nav-signup" to="/signup">Sign Up</router-link>
         </div>
       </div>
     </nav>
@@ -88,6 +90,32 @@ nav a {
 
 nav a.router-link-exact-active {
   color: #42b983;
+}
+
+.nav-btn {
+  margin-left: 18px;
+  padding: 7px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.nav-btn.nav-login:hover {
+  background: #f3f4f6;
+  color: #e53935;
+  border-color: #e53935;
+}
+.nav-btn.nav-signup {
+  background: #e53935;
+  color: #fff;
+  border: 1.5px solid #e53935;
+  margin-left: 10px;
+}
+.nav-btn.nav-signup:hover {
+  background: #b71c1c;
+  border-color: #b71c1c;
 }
 
 /* 移除 .router-view 的 margin-top，避免影响 home 页 */

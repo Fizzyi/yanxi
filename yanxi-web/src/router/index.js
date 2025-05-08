@@ -3,6 +3,8 @@ import Home from '../views/Home.vue'
 import About from '../views/About.vue'
 import Courses from '../views/Courses.vue'
 import Resources from '../views/Resources.vue'
+import Login from '../views/Login.vue'
+import SignUp from '../views/SignUp.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,6 +28,16 @@ const router = createRouter({
       path: '/resources',
       name: 'resources',
       component: Resources
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: Login
+    },
+    {
+      path: '/signup',
+      name: 'signup',
+      component: SignUp
     }
   ]
 })
