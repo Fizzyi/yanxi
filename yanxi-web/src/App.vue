@@ -1,5 +1,27 @@
 <script setup>
 import Footer from './components/Footer.vue'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const isLoggedIn = ref(false)
+const userRole = ref('')
+
+onMounted(() => {
+  // 检查本地存储中是否有token和用户角色
+  const token = localStorage.getItem('token')
+  const role = localStorage.getItem('userRole')
+  isLoggedIn.value = !!token
+  userRole.value = role || ''
+})
+
+const handleLogout = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('userRole')
+  isLoggedIn.value = false
+  userRole.value = ''
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -14,8 +36,14 @@ import Footer from './components/Footer.vue'
           <router-link to="/about">About</router-link> |
           <router-link to="/courses">Courses</router-link> |
           <router-link to="/resources">Resources</router-link>
-          <router-link class="nav-btn nav-login" to="/login">Log In</router-link>
-          <router-link class="nav-btn nav-signup" to="/signup">Sign Up</router-link>
+          <template v-if="!isLoggedIn">
+            <router-link class="nav-btn nav-login" to="/login">Log In</router-link>
+            <router-link class="nav-btn nav-signup" to="/signup">Sign Up</router-link>
+          </template>
+          <template v-else>
+            <router-link v-if="userRole === 'TEACHER'" class="nav-btn nav-teacher" to="/teacher">Teacher Portal</router-link>
+            <button class="nav-btn nav-logout" @click="handleLogout">Logout</button>
+          </template>
         </div>
       </div>
     </nav>
@@ -116,6 +144,43 @@ nav a.router-link-exact-active {
 .nav-btn.nav-signup:hover {
   background: #b71c1c;
   border-color: #b71c1c;
+}
+
+.nav-btn.nav-logout {
+  margin-left: 18px;
+  padding: 7px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+  cursor: pointer;
+}
+
+.nav-btn.nav-logout:hover {
+  background: #f3f4f6;
+  color: #e53935;
+  border-color: #e53935;
+}
+
+.nav-btn.nav-teacher {
+  margin-left: 18px;
+  padding: 7px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  border: 1.5px solid #4CAF50;
+  background: #fff;
+  color: #4CAF50;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+  text-decoration: none;
+}
+
+.nav-btn.nav-teacher:hover {
+  background: #4CAF50;
+  color: #fff;
+  border-color: #4CAF50;
 }
 
 /* 移除 .router-view 的 margin-top，避免影响 home 页 */

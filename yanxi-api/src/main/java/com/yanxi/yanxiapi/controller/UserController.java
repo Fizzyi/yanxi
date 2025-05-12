@@ -4,12 +4,15 @@ import com.yanxi.yanxiapi.dto.UserLoginDTO;
 import com.yanxi.yanxiapi.dto.UserRegisterDTO;
 import com.yanxi.yanxiapi.entity.User;
 import com.yanxi.yanxiapi.service.UserService;
+import com.yanxi.yanxiapi.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 用户控制器
@@ -20,6 +23,12 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private UserRepository userRepository;
 
     /**
      * 学生注册
@@ -59,9 +68,7 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserLoginDTO loginDTO) {
         try {
-            String token = userService.login(loginDTO);
-            Map<String, String> response = new HashMap<>();
-            response.put("token", token);
+            Map<String, String> response = userService.loginWithRole(loginDTO);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, String> response = new HashMap<>();

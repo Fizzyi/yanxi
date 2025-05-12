@@ -1,0 +1,53 @@
+package com.yanxi.yanxiapi.service;
+
+import com.yanxi.yanxiapi.entity.ClassEntity;
+import com.yanxi.yanxiapi.entity.ClassStudent;
+import com.yanxi.yanxiapi.entity.User;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * 班级服务接口
+ */
+public interface ClassService {
+    /**
+     * 获取教师的所有班级
+     */
+    List<ClassEntity> getClassesByTeacher(User teacher);
+
+    /**
+     * 获取学生的所有班级
+     */
+    List<ClassStudent> getClassesByStudent(User student);
+
+    /**
+     * 创建新班级
+     */
+    ClassEntity createClass(String name, User teacher);
+
+    /**
+     * 删除班级
+     */
+    void deleteClass(Long classId);
+
+    /**
+     * 将学生添加到班级
+     */
+    ClassStudent addStudentToClass(ClassEntity classEntity, User student);
+
+    /**
+     * 从班级中移除学生
+     */
+    void removeStudentFromClass(ClassEntity classEntity, User student);
+
+    /**
+     * 根据班级代码获取班级
+     */
+    Optional<ClassEntity> getClassByCode(String code);
+
+    /**
+     * 根据ID获取班级
+     */
+    Optional<ClassEntity> getClassById(Long id);
+}

@@ -8,10 +8,15 @@ import com.yanxi.yanxiapi.service.UserService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 
 /**
@@ -30,6 +35,25 @@ public class UserServiceImpl implements UserService {
     private final long JWT_EXPIRATION = 86400000L; // 24小时
 
     @Override
+    @Transactional(readOnly = true)
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getUsername())
+                .password(user.getPassword())
+                .authorities(user.getUserType())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
+    }
+
+    @Override
+    @Transactional
     public User register(UserRegisterDTO registerDTO) {
         // 检查用户名是否已存在
         if (userRepository.findByUsername(registerDTO.getUsername()).isPresent()) {
@@ -51,11 +75,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public String login(UserLoginDTO loginDTO) {
         // 查找用户
-        Optional<User> userOpt = userRepository.findByUsernameAndUserType(
-            loginDTO.getUsername(), 
-            loginDTO.getUserType()
+        Optional<User> userOpt = userRepository.findByUsername(
+            loginDTO.getUsername()
         );
 
         if (!userOpt.isPresent()) {
@@ -76,7 +100,8 @@ public class UserServiceImpl implements UserService {
     /**
      * 生成JWT token
      */
-    private String generateToken(User user) {
+    @Override
+    public String generateToken(User user) {
         return Jwts.builder()
                 .setSubject(user.getUsername())
                 .claim("userId", user.getId())
@@ -85,5 +110,23 @@ public class UserServiceImpl implements UserService {
                 .setExpiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
                 .signWith(SignatureAlgorithm.HS512, JWT_SECRET)
                 .compact();
+    }
+
+    @Override
+    @Transactional
+    public Map<String, String> loginWithRole(UserLoginDTO loginDTO) {
+        Optional<User> userOpt = userRepository.findByUsername(loginDTO.getUsername());
+        if (!userOpt.isPresent()) {
+            throw new RuntimeException("用户不存在");
+        }
+        User user = userOpt.get();
+        if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
+            throw new RuntimeException("密码错误");
+        }
+        String token = generateToken(user);
+        Map<String, String> response = new HashMap<>();
+        response.put("token", token);
+        response.put("userRole", user.getUserType());
+        return response;
     }
 } 

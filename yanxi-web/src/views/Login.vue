@@ -63,16 +63,21 @@ const handleSubmit = async () => {
     // 调用登录接口
     const response = await axios.post('http://localhost:8080/api/users/login', formData)
     
-    // 保存token到localStorage
+    // 保存token和userRole到localStorage
     localStorage.setItem('token', response.data.token)
+    localStorage.setItem('userRole', response.data.userRole)
     
     // 显示成功消息
     success.value = 'Login successful! Redirecting...'
     
-    // 2秒后跳转到首页
+    // 根据身份跳转
     setTimeout(() => {
-      router.push('/')
-    }, 2000)
+      if (response.data.userRole === 'TEACHER') {
+        router.push('/teacher/classes')
+      } else {
+        router.push('/')
+      }
+    }, 1500)
   } catch (err) {
     error.value = err.response?.data?.error || 'Login failed. Please try again.'
   } finally {
