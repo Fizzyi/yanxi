@@ -3,15 +3,31 @@
     <div class="auth-box">
       <h1 class="auth-title">Log In</h1>
       <div class="auth-subtitle">Welcome back! Please enter your details.</div>
-      <form class="auth-form">
+      <form class="auth-form" @submit.prevent="handleSubmit">
         <label class="auth-label">Email</label>
-        <input class="auth-input" type="email" placeholder="Enter your email" />
+        <input 
+          class="auth-input" 
+          type="email" 
+          placeholder="Enter your email" 
+          v-model="formData.username"
+          required
+        />
         <div class="auth-label-row">
           <label class="auth-label">Password</label>
           <!-- <a class="auth-link" href="#">Forgot password?</a> -->
         </div>
-        <input class="auth-input" type="password" placeholder="Enter your password" />
-        <button class="auth-btn" type="submit">Log in</button>
+        <input 
+          class="auth-input" 
+          type="password" 
+          placeholder="Enter your password" 
+          v-model="formData.password"
+          required
+        />
+        <div v-if="error" class="error-message">{{ error }}</div>
+        <div v-if="success" class="success-message">{{ success }}</div>
+        <button class="auth-btn" type="submit" :disabled="loading">
+          {{ loading ? 'Logging in...' : 'Log in' }}
+        </button>
       </form>
       <div class="auth-bottom">
         Don't have an account? <a class="auth-link" href="/signup">Sign up</a>
@@ -21,6 +37,48 @@
 </template>
 
 <script setup>
+import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+
+const router = useRouter()
+const loading = ref(false)
+const error = ref('')
+const success = ref('')
+
+const formData = reactive({
+  username: '',
+  password: '',
+  userType: 'STUDENT' // 默认学生登录
+})
+
+const handleSubmit = async () => {
+  try {
+    // 重置错误信息
+    error.value = ''
+    success.value = ''
+    
+    loading.value = true
+    
+    // 调用登录接口
+    const response = await axios.post('http://localhost:8080/api/users/login', formData)
+    
+    // 保存token到localStorage
+    localStorage.setItem('token', response.data.token)
+    
+    // 显示成功消息
+    success.value = 'Login successful! Redirecting...'
+    
+    // 2秒后跳转到首页
+    setTimeout(() => {
+      router.push('/')
+    }, 2000)
+  } catch (err) {
+    error.value = err.response?.data?.error || 'Login failed. Please try again.'
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -127,5 +185,21 @@
 }
 .auth-link:hover {
   text-decoration: underline;
+}
+.error-message {
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin-top: 8px;
+  text-align: center;
+}
+.success-message {
+  color: #059669;
+  font-size: 0.9rem;
+  margin-top: 8px;
+  text-align: center;
+  background-color: #ecfdf5;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #10b981;
 }
 </style> 

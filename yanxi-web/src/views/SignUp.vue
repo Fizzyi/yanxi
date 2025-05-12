@@ -3,17 +3,46 @@
     <div class="auth-box">
       <h1 class="auth-title">Sign Up</h1>
       <div class="auth-subtitle">Create a student account to upload documents.</div>
-      <form class="auth-form">
+      <form class="auth-form" @submit.prevent="handleSubmit">
         <label class="auth-label">Full Name</label>
-        <input class="auth-input" type="text" placeholder="Enter your full name" />
+        <input 
+          class="auth-input" 
+          type="text" 
+          placeholder="Enter your full name" 
+          v-model="formData.realName"
+          required
+        />
         <label class="auth-label">Email</label>
-        <input class="auth-input" type="email" placeholder="Enter your email" />
+        <input 
+          class="auth-input" 
+          type="email" 
+          placeholder="Enter your email" 
+          v-model="formData.email"
+          required
+        />
         <label class="auth-label">Password</label>
-        <input class="auth-input" type="password" placeholder="Enter your password" />
+        <input 
+          class="auth-input" 
+          type="password" 
+          placeholder="Enter your password" 
+          v-model="formData.password"
+          required
+          minlength="6"
+        />
         <div class="auth-tip">Password must be at least 6 characters long.</div>
         <label class="auth-label">Confirm Password</label>
-        <input class="auth-input" type="password" placeholder="Confirm your password" />
-        <button class="auth-btn" type="submit">Sign up</button>
+        <input 
+          class="auth-input" 
+          type="password" 
+          placeholder="Confirm your password" 
+          v-model="confirmPassword"
+          required
+        />
+        <div v-if="error" class="error-message">{{ error }}</div>
+        <div v-if="success" class="success-message">{{ success }}</div>
+        <button class="auth-btn" type="submit" :disabled="loading">
+          {{ loading ? 'Signing up...' : 'Sign up' }}
+        </button>
       </form>
       <div class="auth-bottom">
         Already have an account? <a class="auth-link" href="/login">Log in</a>
@@ -26,6 +55,58 @@
 </template>
 
 <script setup>
+import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+// import config from '@/config'
+
+const router = useRouter()
+const loading = ref(false)
+const error = ref('')
+const success = ref('')
+const confirmPassword = ref('')
+
+const formData = reactive({
+  username: '',
+  password: '',
+  realName: '',
+  email: '',
+  userType: 'STUDENT'
+})
+
+const handleSubmit = async () => {
+  try {
+    // 重置错误信息
+    error.value = ''
+    success.value = ''
+    
+    // 验证密码
+    if (formData.password !== confirmPassword.value) {
+      error.value = 'Passwords do not match'
+      return
+    }
+
+    // 设置用户名（使用邮箱作为用户名）
+    formData.username = formData.email
+
+    loading.value = true
+    
+    // 调用注册接口
+    const response = await axios.post('http://localhost:8080/api/users/register/student', formData)
+    
+    // 显示成功消息
+    success.value = 'Registration successful! Redirecting to login page...'
+    
+    // 3秒后跳转到登录页
+    setTimeout(() => {
+      router.push('/login')
+    }, 3000)
+  } catch (err) {
+    error.value = err.response?.data?.error || 'Registration failed. Please try again.'
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -127,5 +208,21 @@
   color: #444;
   font-size: 0.92rem;
   margin-top: 8px;
+}
+.error-message {
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin-top: 8px;
+  text-align: center;
+}
+.success-message {
+  color: #059669;
+  font-size: 0.9rem;
+  margin-top: 8px;
+  text-align: center;
+  background-color: #ecfdf5;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #10b981;
 }
 </style> 
