@@ -85,7 +85,7 @@ const classForm = ref({
 const fetchClasses = async () => {
   try {
     loading.value = true
-    const response = await axios.get('http://localhost:8080/api/classes', {
+    const response = await axios.get('http://localhost:8080/api/classes/teacher', {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`
       }
@@ -107,7 +107,7 @@ const handleSubmit = async () => {
         }
       })
     } else {
-      await axios.post('http://localhost:8080/api/classes', classForm.value, {
+      await axios.post('http://localhost:8080/api/classes/', classForm.value, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }

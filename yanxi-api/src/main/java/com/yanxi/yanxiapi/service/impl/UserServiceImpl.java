@@ -7,15 +7,15 @@ import com.yanxi.yanxiapi.repository.UserRepository;
 import com.yanxi.yanxiapi.service.UserService;
 import com.yanxi.yanxiapi.utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * 用户服务实现类
@@ -37,10 +37,13 @@ public class UserServiceImpl implements UserService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+        // 将数据库中的角色（如"ADMIN"）转换为Spring Security的权限格式（"ROLE_ADMIN"）
+        List<GrantedAuthority> authorities = Arrays.asList(
+            new SimpleGrantedAuthority("ROLE_" + user.getUserType()));
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
                 .password(user.getPassword())
-                .authorities(user.getUserType())
+                .authorities(authorities)
                 .build();
     }
 
@@ -48,6 +51,12 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<User> getUserByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 
     @Override
@@ -72,6 +81,24 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
+    @Override
+    @Transactional
+    public String login(UserLoginDTO loginDTO) {
+        Optional<User> userOpt = userRepository.findByUsername(loginDTO.getUsername());
+        if (!userOpt.isPresent()) {
+            throw new RuntimeException("用户不存在");
+        }
+        User user = userOpt.get();
+        if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
+            throw new RuntimeException("密码错误");
+        }
+        return jwtUtils.generateToken(user);
+    }
+
+    @Override
+    public String generateToken(User user) {
+        return jwtUtils.generateToken(user);
+    }
 
     @Override
     @Transactional

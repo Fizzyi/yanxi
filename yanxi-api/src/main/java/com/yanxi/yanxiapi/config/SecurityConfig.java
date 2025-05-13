@@ -33,7 +33,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeRequests()
             .antMatchers("/api/users/register/**", "/api/users/login").permitAll()
-            .antMatchers("/api/classes/**").hasRole("TEACHER")
+            .antMatchers("/api/classes/**").hasAuthority("ROLE_TEACHER")
             .anyRequest().authenticated();
     }
 } 
