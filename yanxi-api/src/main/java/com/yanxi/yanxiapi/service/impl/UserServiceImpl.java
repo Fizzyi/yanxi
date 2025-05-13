@@ -5,8 +5,7 @@ import com.yanxi.yanxiapi.dto.UserRegisterDTO;
 import com.yanxi.yanxiapi.entity.User;
 import com.yanxi.yanxiapi.repository.UserRepository;
 import com.yanxi.yanxiapi.service.UserService;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import com.yanxi.yanxiapi.utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -14,7 +13,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
@@ -31,8 +29,8 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    private final String JWT_SECRET = "yanxi_secret_key";
-    private final long JWT_EXPIRATION = 86400000L; // 24小时
+    @Autowired
+    private JwtUtils jwtUtils;
 
     @Override
     @Transactional(readOnly = true)
@@ -74,43 +72,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
-    @Override
-    @Transactional
-    public String login(UserLoginDTO loginDTO) {
-        // 查找用户
-        Optional<User> userOpt = userRepository.findByUsername(
-            loginDTO.getUsername()
-        );
-
-        if (!userOpt.isPresent()) {
-            throw new RuntimeException("用户不存在");
-        }
-
-        User user = userOpt.get();
-
-        // 验证密码
-        if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
-            throw new RuntimeException("密码错误");
-        }
-
-        // 生成JWT token
-        return generateToken(user);
-    }
-
-    /**
-     * 生成JWT token
-     */
-    @Override
-    public String generateToken(User user) {
-        return Jwts.builder()
-                .setSubject(user.getUsername())
-                .claim("userId", user.getId())
-                .claim("userType", user.getUserType())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
-                .signWith(SignatureAlgorithm.HS512, JWT_SECRET)
-                .compact();
-    }
 
     @Override
     @Transactional
@@ -123,7 +84,7 @@ public class UserServiceImpl implements UserService {
         if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
             throw new RuntimeException("密码错误");
         }
-        String token = generateToken(user);
+        String token = jwtUtils.generateToken(user);
         Map<String, String> response = new HashMap<>();
         response.put("token", token);
         response.put("userRole", user.getUserType());

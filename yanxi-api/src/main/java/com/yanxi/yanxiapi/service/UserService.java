@@ -24,17 +24,6 @@ public interface UserService extends UserDetailsService {
      */
     User register(UserRegisterDTO registerDTO);
 
-    /**
-     * 用户登录
-     * @param loginDTO 登录信息
-     * @return JWT token
-     */
-    String login(UserLoginDTO loginDTO);
-
-    /**
-     * 生成JWT token
-     */
-    String generateToken(User user);
 
     /**
      * 登录并返回token和userRole
