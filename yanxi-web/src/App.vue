@@ -41,7 +41,8 @@ const handleLogout = () => {
             <router-link class="nav-btn nav-signup" to="/signup">Sign Up</router-link>
           </template>
           <template v-else>
-            <router-link v-if="userRole === 'TEACHER'" class="nav-btn nav-teacher" to="/teacher">Teacher Portal</router-link>
+            <router-link v-if="userRole === 'TEACHER'" class="nav-btn nav-teacher" to="/teacher">Teacher Zone</router-link>
+            <router-link v-if="userRole === 'STUDENT'" class="nav-btn nav-student" to="/student">Student Zone</router-link>
             <button class="nav-btn nav-logout" @click="handleLogout">Logout</button>
           </template>
         </div>

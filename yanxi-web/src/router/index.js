@@ -7,6 +7,7 @@ import Login from '../views/Login.vue'
 import SignUp from '../views/SignUp.vue'
 import ClassManagement from '../views/teacher/ClassManagement.vue'
 import StudentManagement from '../views/teacher/StudentManagement.vue'
+import StudentHome from '../views/student/Home.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -64,6 +65,12 @@ const router = createRouter({
           meta: { requiresAuth: true, requiresTeacher: true }
         }
       ]
+    },
+    {
+      path: '/student',
+      name: 'student',
+      component: StudentHome,
+      meta: { requiresAuth: true, requiresStudent: true }
     }
   ]
 })
@@ -78,6 +85,9 @@ router.beforeEach((to, from, next) => {
     next({ name: 'login' })
   } else if (to.meta.requiresTeacher && userRole !== 'TEACHER') {
     // 需要教师权限但不是教师，重定向到首页
+    next({ name: 'home' })
+  } else if (to.meta.requiresStudent && userRole !== 'STUDENT') {
+    // 需要学生权限但不是学生，重定向到首页
     next({ name: 'home' })
   } else {
     next()

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -58,11 +59,11 @@ public class ClassController {
             @AuthenticationPrincipal User teacher) {
         ClassEntity classEntity = classService.getClassById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Class not found"));
-        
+
         if (!classEntity.getTeacher().getId().equals(teacher.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        
+
         classService.deleteClass(classId);
         return ResponseEntity.ok().build();
     }
@@ -71,11 +72,16 @@ public class ClassController {
     public ResponseEntity<ClassDTO> joinClass(
             @RequestBody JoinClassRequest request,
             @AuthenticationPrincipal User student) {
-        ClassEntity classEntity = classService.getClassByCode(request.getCode())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid class code"));
-        
-        ClassStudent classStudent = classService.addStudentToClass(classEntity, student);
-        return ResponseEntity.ok(convertToDTO(classStudent.getClassEntity()));
+
+        Optional<ClassEntity> classByCode = classService.getClassByCode(request.getCode());
+        if (classByCode.isPresent()) {
+            ClassStudent classStudent = classService.addStudentToClass(classByCode.get(), student);
+            return ResponseEntity.ok(convertToDTO(classStudent.getClassEntity()));
+        } else {
+            return ResponseEntity.ok(null);
+        }
+
+
     }
 
     @DeleteMapping("/{classId}/students/{studentId}")
@@ -85,14 +91,14 @@ public class ClassController {
             @AuthenticationPrincipal User teacher) {
         ClassEntity classEntity = classService.getClassById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Class not found"));
-        
+
         if (!classEntity.getTeacher().getId().equals(teacher.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        
+
         User student = userService.getUserById(studentId)
                 .orElseThrow(() -> new IllegalArgumentException("Student not found"));
-        
+
         classService.removeStudentFromClass(classEntity, student);
         return ResponseEntity.ok().build();
     }

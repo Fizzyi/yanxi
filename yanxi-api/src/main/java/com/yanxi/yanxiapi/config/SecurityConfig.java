@@ -26,14 +26,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-            .addFilterBefore(corsFilter, CorsFilter.class)
-            .cors().and().csrf().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .authorizeRequests()
-            .antMatchers("/api/users/register/**", "/api/users/login").permitAll()
-            .antMatchers("/api/classes/**").hasAuthority("ROLE_TEACHER")
-            .anyRequest().authenticated();
+                .addFilterBefore(corsFilter, CorsFilter.class)
+                .cors().and().csrf().disable()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .authorizeRequests()
+                .antMatchers("/api/users/register/**", "/api/users/login").permitAll()
+                .antMatchers("/api/classes/**").hasAuthority("ROLE_TEACHER")
+                .antMatchers("/api/classes/**").hasAuthority("ROLE_STUDENT")
+                .antMatchers("/api/students/**").hasAuthority("ROLE_STUDENT")
+                .anyRequest().authenticated();
     }
 } 

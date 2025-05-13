@@ -1,7 +1,7 @@
 <template>
   <div class="class-management">
     <div class="header-actions">
-      <h2>Class Management</h2>
+      <h2></h2>
       <button class="add-btn" @click="showAddClassModal = true">
         <i class="fas fa-plus"></i> Add New Class
       </button>
@@ -12,17 +12,22 @@
       <div v-else-if="classes.length === 0" class="empty-state">
         No classes found. Create your first class!
       </div>
-      <div v-else class="class-grid">
-        <div v-for="classItem in classes" :key="classItem.id" class="class-card">
-          <div class="class-info">
-            <h3>{{ classItem.name }}</h3>
-            <p>{{ classItem.description }}</p>
-            <div class="class-stats">
-              <span><i class="fas fa-users"></i> {{ classItem.studentCount }} Students</span>
-              <span><i class="fas fa-book"></i> {{ classItem.courseCount }} Courses</span>
-            </div>
-          </div>
-          <div class="class-actions">
+      <div v-else class="class-table">
+        <div class="table-header">
+          <div class="code">Class Code</div>
+          <div class="name">Class Name</div>
+          <div class="teacher">Teacher</div>
+          <div class="students">Students</div>
+          <div class="created">Created At</div>
+          <div class="actions">Actions</div>
+        </div>
+        <div v-for="classItem in classes" :key="classItem.id" class="class-row">
+          <div class="code">{{ classItem.code }}</div>
+          <div class="name">{{ classItem.name }}</div>
+          <div class="teacher">{{ classItem.teacherName }}</div>
+          <div class="students">{{ classItem.studentCount }} Students</div>
+          <div class="created">{{ classItem.createdAt }}</div>
+          <div class="actions">
             <button class="action-btn edit" @click="editClass(classItem)">
               <i class="fas fa-edit"></i> Edit
             </button>
@@ -183,62 +188,78 @@ onMounted(fetchClasses)
   background: #388E3C;
 }
 
-.class-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.class-card {
+.class-table {
   background: white;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+  overflow: hidden;
 }
 
-.class-info h3 {
-  margin: 0 0 10px 0;
+.table-header {
+  display: grid;
+  grid-template-columns: 120px 2fr 1fr 1fr 1fr 1fr;
+  padding: 16px;
+  background: #f8f9fa;
+  font-weight: bold;
+  color: #2c3e50;
+  border-bottom: 2px solid #eee;
+}
+
+.class-row {
+  display: grid;
+  grid-template-columns: 120px 2fr 1fr 1fr 1fr 1fr;
+  padding: 16px;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  transition: background-color 0.2s;
+}
+
+.class-row:hover {
+  background-color: #f8f9fa;
+}
+
+.class-row .code {
+  font-family: monospace;
+  background-color: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.class-row .name {
+  font-weight: 500;
   color: #2c3e50;
 }
 
-.class-info p {
+.class-row .teacher {
   color: #666;
-  margin: 0 0 15px 0;
 }
 
-.class-stats {
-  display: flex;
-  gap: 15px;
+.class-row .students {
   color: #666;
-  font-size: 0.9rem;
 }
 
-.class-stats span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.class-row .created {
+  color: #666;
+  font-size: 0.9em;
 }
 
-.class-actions {
+.class-row .actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .action-btn {
-  flex: 1;
-  padding: 8px;
+  padding: 6px 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  font-weight: bold;
-  transition: all 0.3s;
+  gap: 4px;
+  font-size: 0.9em;
+  transition: all 0.2s;
 }
 
 .action-btn.edit {
