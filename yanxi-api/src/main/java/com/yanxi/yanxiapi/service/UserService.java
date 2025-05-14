@@ -1,5 +1,6 @@
 package com.yanxi.yanxiapi.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.yanxi.yanxiapi.dto.UserLoginDTO;
 import com.yanxi.yanxiapi.dto.UserRegisterDTO;
 import com.yanxi.yanxiapi.entity.User;
@@ -11,7 +12,7 @@ import java.util.Optional;
 /**
  * 用户服务接口
  */
-public interface UserService extends UserDetailsService {
+public interface UserService extends IService<User>, UserDetailsService {
     /**
      * 根据ID获取用户
      */
@@ -45,4 +46,11 @@ public interface UserService extends UserDetailsService {
      * 登录并返回token和userRole
      */
     Map<String, String> loginWithRole(UserLoginDTO loginDTO);
+
+    /**
+     * 根据邮箱查找用户
+     * @param email 邮箱
+     * @return 用户对象，如果不存在返回null
+     */
+    User getByEmail(String email);
 } 

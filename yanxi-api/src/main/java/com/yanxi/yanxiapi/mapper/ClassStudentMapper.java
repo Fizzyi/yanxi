@@ -17,4 +17,12 @@ public interface ClassStudentMapper extends BaseMapper<ClassStudent> {
     
     @Select("SELECT * FROM class_student WHERE class_id = #{classId} AND student_id = #{studentId}")
     ClassStudent findByClassIdAndStudentId(Long classId, Long studentId);
+    
+    /**
+     * 根据学生ID查询其所在的所有班级ID
+     * @param studentId 学生ID
+     * @return 班级ID列表
+     */
+    @Select("SELECT class_id FROM class_student WHERE student_id = #{studentId}")
+    List<Long> selectClassIdsByStudentId(Long studentId);
 } 

@@ -123,4 +123,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         response.put("userRole", user.getUserType());
         return response;
     }
+
+    @Override
+    public User getByEmail(String email) {
+        return null;
+    }
 } 

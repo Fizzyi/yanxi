@@ -1,20 +1,63 @@
 package com.yanxi.yanxiapi.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yanxi.yanxiapi.entity.Assignment;
 import com.yanxi.yanxiapi.entity.User;
 import com.yanxi.yanxiapi.mapper.AssignmentMapper;
+import com.yanxi.yanxiapi.mapper.ClassStudentMapper;
 import com.yanxi.yanxiapi.service.AssignmentService;
+import com.yanxi.yanxiapi.service.UserService;
 import com.yanxi.yanxiapi.utils.FileUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AssignmentServiceImpl extends ServiceImpl<AssignmentMapper, Assignment> implements AssignmentService {
+
+    private final ClassStudentMapper classStudentMapper;
+    private final UserService userService;
+
+    @Override
+    public List<Assignment> getAssignments(Long classId, String studentEmail, User teacher) {
+        LambdaQueryWrapper<Assignment> queryWrapper = new LambdaQueryWrapper<>();
+        
+        // 只查询当前教师的作业
+        queryWrapper.eq(Assignment::getTeacherId, teacher.getId());
+        
+        // 如果指定了班级，添加班级筛选条件
+        if (classId != null) {
+            queryWrapper.eq(Assignment::getClassId, classId);
+        }
+        
+        // 如果指定了学生邮箱，需要关联查询该学生所在班级的作业
+        if (studentEmail != null) {
+            // 通过邮箱查找学生
+            User student = userService.getByEmail(studentEmail);
+            if (student != null) {
+                // 获取学生所在的所有班级ID
+                List<Long> studentClassIds = classStudentMapper.selectClassIdsByStudentId(student.getId());
+                if (!studentClassIds.isEmpty()) {
+                    queryWrapper.in(Assignment::getClassId, studentClassIds);
+                } else {
+                    // 如果学生不在任何班级，返回空列表
+                    return Collections.emptyList();
+                }
+            }
+        }
+        
+        // 按创建时间倒序排序
+        queryWrapper.orderByDesc(Assignment::getCreatedAt);
+        
+        return list(queryWrapper);
+    }
 
     @Override
     public Assignment createAssignment(Long classId, String title, String description, MultipartFile file, LocalDateTime dueDate, User teacher) {
