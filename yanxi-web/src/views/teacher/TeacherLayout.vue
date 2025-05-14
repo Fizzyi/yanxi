@@ -6,14 +6,14 @@
         <button 
           class="tab-btn" 
           :class="{ active: activeTab === 'classes' }"
-          @click="activeTab = 'classes'"
+          @click="handleTabChange('classes')"
         >
           Class Management
         </button>
         <button 
           class="tab-btn" 
           :class="{ active: activeTab === 'students' }"
-          @click="activeTab = 'students'"
+          @click="handleTabChange('students')"
         >
           Student Management
         </button>
@@ -21,21 +21,43 @@
     </div>
     
     <div class="teacher-content">
-      <component :is="currentComponent" />
+      <router-view></router-view>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import ClassManagement from './ClassManagement.vue'
 import StudentManagement from './StudentManagement.vue'
 
+const route = useRoute()
+const router = useRouter()
 const activeTab = ref('classes')
+
+// 根据当前路由路径设置活动标签
+watch(() => route.path, (path) => {
+  if (path.includes('/students')) {
+    activeTab.value = 'students'
+  } else {
+    activeTab.value = 'classes'
+  }
+}, { immediate: true })
 
 const currentComponent = computed(() => {
   return activeTab.value === 'classes' ? ClassManagement : StudentManagement
 })
+
+// 处理标签切换
+const handleTabChange = (tab) => {
+  activeTab.value = tab
+  if (tab === 'classes') {
+    router.push('/teacher/classes')
+  } else {
+    router.push('/teacher/students')
+  }
+}
 </script>
 
 <style scoped>

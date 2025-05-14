@@ -18,7 +18,7 @@
           <div class="name">Class Name</div>
           <div class="teacher">Teacher</div>
           <div class="students">Students</div>
-          <div class="created">Created At</div>
+          <!-- <div class="created">Created At</div> -->
           <div class="actions">Actions</div>
         </div>
         <div v-for="classItem in classes" :key="classItem.id" class="class-row">
@@ -26,8 +26,11 @@
           <div class="name">{{ classItem.name }}</div>
           <div class="teacher">{{ classItem.teacherName }}</div>
           <div class="students">{{ classItem.studentCount }} Students</div>
-          <div class="created">{{ classItem.createdAt }}</div>
+          <!-- <div class="created">{{ classItem.createdAt }}</div> -->
           <div class="actions">
+            <button class="action-btn detail" @click="viewClassDetails(classItem)">
+              <i class="fas fa-list"></i> Detail
+            </button>
             <button class="action-btn edit" @click="editClass(classItem)">
               <i class="fas fa-edit"></i> Edit
             </button>
@@ -76,7 +79,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const classes = ref([])
 const loading = ref(true)
 const showAddClassModal = ref(false)
@@ -153,6 +158,19 @@ const closeModal = () => {
     name: '',
     description: ''
   }
+}
+
+const viewClassDetails = (classItem) => {
+  console.log('Attempting to navigate to student management with classId:', classItem.id)
+  router.push({
+    name: 'student-management',
+    params: {},
+    query: { classId: classItem.id }
+  }).catch(err => {
+    if (err.name !== 'NavigationDuplicated') {
+      console.error('Navigation error:', err)
+    }
+  })
 }
 
 onMounted(fetchClasses)
@@ -260,6 +278,15 @@ onMounted(fetchClasses)
   gap: 4px;
   font-size: 0.9em;
   transition: all 0.2s;
+}
+
+.action-btn.detail {
+  background: #E3F2FD;
+  color: #1976D2;
+}
+
+.action-btn.detail:hover {
+  background: #BBDEFB;
 }
 
 .action-btn.edit {

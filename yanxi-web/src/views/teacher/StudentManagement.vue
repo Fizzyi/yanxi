@@ -126,7 +126,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
 const students = ref([])
 const classes = ref([])
 const loading = ref(true)
@@ -243,6 +245,10 @@ const closeEditModal = () => {
 }
 
 onMounted(() => {
+  // 如果URL中有classId参数，则自动选择该班级
+  if (route.query.classId) {
+    selectedClass.value = route.query.classId
+  }
   fetchClasses()
   fetchStudents()
 })
