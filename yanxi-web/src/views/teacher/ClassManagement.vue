@@ -2,9 +2,14 @@
   <div class="class-management">
     <div class="header-actions">
       <h2></h2>
-      <button class="add-btn" @click="showAddClassModal = true">
-        <i class="fas fa-plus"></i> Add New Class
-      </button>
+      <div class="action-buttons">
+        <button class="add-btn" @click="showAddClassModal = true">
+          <i class="fas fa-plus"></i> Add New Class
+        </button>
+        <button class="add-btn homework" @click="showAddHomeworkModal = true">
+          <i class="fas fa-file-upload"></i> Add New Homework
+        </button>
+      </div>
     </div>
 
     <div class="class-list">
@@ -73,6 +78,56 @@
         </form>
       </div>
     </div>
+
+    <!-- Add Homework Modal -->
+    <div v-if="showAddHomeworkModal" class="modal">
+      <div class="modal-content">
+        <h3>Add New Assignment</h3>
+        <form @submit.prevent="handleHomeworkSubmit">
+          <div class="form-group">
+            <label>Select Class</label>
+            <select v-model="homeworkForm.classId" required>
+              <option value="">Select a class</option>
+              <option v-for="classItem in classes" :key="classItem.id" :value="classItem.id">
+                {{ classItem.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Assignment Title</label>
+            <input 
+              type="text" 
+              v-model="homeworkForm.title" 
+              required 
+              placeholder="Enter assignment title"
+            >
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea 
+              v-model="homeworkForm.description" 
+              placeholder="Enter assignment description"
+              rows="3"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label>Upload File</label>
+            <input 
+              type="file" 
+              @change="handleFileUpload" 
+              required
+              accept=".pdf,.doc,.docx,.txt"
+            >
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="cancel-btn" @click="closeHomeworkModal">Cancel</button>
+            <button type="submit" class="submit-btn" :disabled="uploading">
+              {{ uploading ? 'Uploading...' : 'Upload Assignment' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -85,11 +140,20 @@ const router = useRouter()
 const classes = ref([])
 const loading = ref(true)
 const showAddClassModal = ref(false)
+const showAddHomeworkModal = ref(false)
+const uploading = ref(false)
 const editingClass = ref(null)
 
 const classForm = ref({
   name: '',
   description: ''
+})
+
+const homeworkForm = ref({
+  classId: '',
+  title: '',
+  description: '',
+  file: null
 })
 
 const fetchClasses = async () => {
@@ -173,6 +237,46 @@ const viewClassDetails = (classItem) => {
   })
 }
 
+const handleFileUpload = (event) => {
+  homeworkForm.value.file = event.target.files[0]
+}
+
+const handleHomeworkSubmit = async () => {
+  try {
+    uploading.value = true
+    const formData = new FormData()
+    formData.append('classId', homeworkForm.value.classId)
+    formData.append('title', homeworkForm.value.title)
+    formData.append('description', homeworkForm.value.description)
+    formData.append('file', homeworkForm.value.file)
+
+    await axios.post('http://localhost:8080/api/assignments', formData, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    closeHomeworkModal()
+    alert('Assignment added successfully!')
+  } catch (error) {
+    console.error('Error uploading assignment:', error)
+    alert('Failed to upload assignment. Please try again.')
+  } finally {
+    uploading.value = false
+  }
+}
+
+const closeHomeworkModal = () => {
+  showAddHomeworkModal.value = false
+  homeworkForm.value = {
+    classId: '',
+    title: '',
+    description: '',
+    file: null
+  }
+}
+
 onMounted(fetchClasses)
 </script>
 
@@ -186,6 +290,11 @@ onMounted(fetchClasses)
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
 }
 
 .add-btn {
@@ -204,6 +313,14 @@ onMounted(fetchClasses)
 
 .add-btn:hover {
   background: #388E3C;
+}
+
+.add-btn.homework {
+  background: #2196F3;
+}
+
+.add-btn.homework:hover {
+  background: #1976D2;
 }
 
 .class-table {
@@ -317,6 +434,7 @@ onMounted(fetchClasses)
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1000;
 }
 
 .modal-content {
@@ -325,6 +443,10 @@ onMounted(fetchClasses)
   border-radius: 12px;
   width: 100%;
   max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1001;
 }
 
 .form-group {
@@ -379,5 +501,23 @@ onMounted(fetchClasses)
   text-align: center;
   padding: 40px;
   color: #666;
+}
+
+select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: white;
+}
+
+input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: white;
 }
 </style> 
