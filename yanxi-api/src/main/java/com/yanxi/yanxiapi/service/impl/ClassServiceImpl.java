@@ -1,12 +1,12 @@
 package com.yanxi.yanxiapi.service.impl;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yanxi.yanxiapi.entity.ClassEntity;
 import com.yanxi.yanxiapi.entity.ClassStudent;
 import com.yanxi.yanxiapi.entity.User;
-import com.yanxi.yanxiapi.repository.ClassRepository;
-import com.yanxi.yanxiapi.repository.ClassStudentRepository;
+import com.yanxi.yanxiapi.mapper.ClassMapper;
+import com.yanxi.yanxiapi.mapper.ClassStudentMapper;
 import com.yanxi.yanxiapi.service.ClassService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,21 +15,26 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
-public class ClassServiceImpl implements ClassService {
-    private final ClassRepository classRepository;
-    private final ClassStudentRepository classStudentRepository;
+public class ClassServiceImpl extends ServiceImpl<ClassMapper, ClassEntity> implements ClassService {
+    
+    private final ClassMapper classMapper;
+    private final ClassStudentMapper classStudentMapper;
+
+    public ClassServiceImpl(ClassMapper classMapper, ClassStudentMapper classStudentMapper) {
+        this.classMapper = classMapper;
+        this.classStudentMapper = classStudentMapper;
+    }
 
     @Override
     @Transactional(readOnly = true)
     public List<ClassEntity> getClassesByTeacher(User teacher) {
-        return classRepository.findByTeacher(teacher);
+        return classMapper.findByTeacherId(teacher.getId());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ClassStudent> getClassesByStudent(User student) {
-        return classStudentRepository.findByStudent(student);
+        return classStudentMapper.findByStudentId(student.getId());
     }
 
     @Override
@@ -37,54 +42,64 @@ public class ClassServiceImpl implements ClassService {
     public ClassEntity createClass(String name, User teacher) {
         ClassEntity classEntity = new ClassEntity();
         classEntity.setName(name);
-        classEntity.setTeacher(teacher);
+        classEntity.setTeacherId(teacher.getId());
         classEntity.setCode(generateUniqueCode());
-        return classRepository.save(classEntity);
+        save(classEntity);
+        return classEntity;
     }
 
     @Override
     @Transactional
     public void deleteClass(Long classId) {
-        classRepository.deleteById(classId);
+        removeById(classId);
     }
 
     @Override
     @Transactional
     public ClassStudent addStudentToClass(ClassEntity classEntity, User student) {
-        if (classStudentRepository.existsByClassEntityAndStudent(classEntity, student)) {
+        if (classStudentMapper.findByClassIdAndStudentId(classEntity.getId(), student.getId()) != null) {
             throw new IllegalStateException("Student is already in this class");
         }
 
         ClassStudent classStudent = new ClassStudent();
-        classStudent.setClassEntity(classEntity);
-        classStudent.setStudent(student);
-        return classStudentRepository.save(classStudent);
+        classStudent.setClassId(classEntity.getId());
+        classStudent.setStudentId(student.getId());
+        classStudentMapper.insert(classStudent);
+        return classStudent;
     }
 
     @Override
     @Transactional
     public void removeStudentFromClass(ClassEntity classEntity, User student) {
-        Optional<ClassStudent> classStudent = classStudentRepository.findByClassEntityAndStudent(classEntity, student);
-        classStudent.ifPresent(classStudentRepository::delete);
+        ClassStudent classStudent = classStudentMapper.findByClassIdAndStudentId(classEntity.getId(), student.getId());
+        if (classStudent != null) {
+            classStudentMapper.deleteById(classStudent.getId());
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<ClassEntity> getClassByCode(String code) {
-        return classRepository.findByCode(code);
+        return Optional.ofNullable(classMapper.findByCode(code));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<ClassEntity> getClassById(Long id) {
-        return classRepository.findById(id);
+        return Optional.ofNullable(getById(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Integer getStudentCount(Long classId) {
+        return classStudentMapper.findByClassId(classId).size();
     }
 
     private String generateUniqueCode() {
         String code;
         do {
             code = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        } while (classRepository.existsByCode(code));
+        } while (classMapper.findByCode(code) != null);
         return code;
     }
 } 

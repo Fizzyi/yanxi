@@ -1,64 +1,70 @@
 package com.yanxi.yanxiapi.entity;
 
-
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-
-import javax.persistence.*;
+import java.time.LocalDateTime;
 
 /**
  * 用户实体类
  */
 @Data
-@Entity
-@Table(name = "user")
+@TableName("user")
 public class User {
     
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
      * 用户名
      */
-    @Column(nullable = false, unique = true)
+    @TableField("username")
     private String username;
 
     /**
      * 密码
      */
-    @Column(nullable = false)
+    @TableField("password")
     private String password;
 
     /**
      * 用户类型：STUDENT-学生，TEACHER-教师
      */
-    @Column(nullable = false)
+    @TableField("role")
     private String userType;
 
     /**
      * 真实姓名
      */
+    @TableField("real_name")
     private String realName;
 
     /**
      * 邮箱
      */
+    @TableField("email")
     private String email;
 
     /**
      * 手机号
      */
+    @TableField("phone")
     private String phone;
 
     /**
      * 创建时间
      */
-    @Column(nullable = false)
-    private Long createTime;
+    @TableField("created_at")
+    private LocalDateTime createdAt;
 
     /**
      * 更新时间
      */
-    @Column(nullable = false)
-    private Long updateTime;
+    @TableField("updated_at")
+    private LocalDateTime updatedAt;
+
+    /**
+     * 逻辑删除标记
+     */
+    @TableLogic
+    private Integer deleted;
 } 

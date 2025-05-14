@@ -1,40 +1,49 @@
 package com.yanxi.yanxiapi.entity;
 
-import javax.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 @Data
-@Entity
-@Table(name = "class")
+@TableName("class")
 public class ClassEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(nullable = false, length = 100)
+    /**
+     * 班级名称
+     */
+    @TableField("name")
     private String name;
 
-    @Column(nullable = false, length = 20, unique = true)
+    /**
+     * 班级代码
+     */
+    @TableField("code")
     private String code;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_id", nullable = false)
-    private User teacher;
+    /**
+     * 教师ID
+     */
+    @TableField("teacher_id")
+    private Long teacherId;
 
-    @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL)
-    private Set<ClassStudent> students = new HashSet<>();
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    /**
+     * 创建时间
+     */
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
+    /**
+     * 更新时间
+     */
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
+
+    /**
+     * 逻辑删除标记
+     */
+    @TableLogic
+    private Integer deleted;
 } 

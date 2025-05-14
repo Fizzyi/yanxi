@@ -50,4 +50,9 @@ public interface ClassService {
      * 根据ID获取班级
      */
     Optional<ClassEntity> getClassById(Long id);
+
+    /**
+     * 获取班级的学生数量
+     */
+    Integer getStudentCount(Long classId);
 }

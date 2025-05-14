@@ -40,7 +40,10 @@ public class ClassController {
     public ResponseEntity<List<ClassDTO>> getStudentClasses(@AuthenticationPrincipal User student) {
         List<ClassStudent> classStudents = classService.getClassesByStudent(student);
         List<ClassDTO> classDTOs = classStudents.stream()
-                .map(cs -> convertToDTO(cs.getClassEntity()))
+                .map(cs -> classService.getClassById(cs.getClassId())
+                        .map(this::convertToDTO)
+                        .orElse(null))
+                .filter(dto -> dto != null)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(classDTOs);
     }
@@ -60,7 +63,7 @@ public class ClassController {
         ClassEntity classEntity = classService.getClassById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Class not found"));
 
-        if (!classEntity.getTeacher().getId().equals(teacher.getId())) {
+        if (!classEntity.getTeacherId().equals(teacher.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -72,16 +75,14 @@ public class ClassController {
     public ResponseEntity<ClassDTO> joinClass(
             @RequestBody JoinClassRequest request,
             @AuthenticationPrincipal User student) {
-
         Optional<ClassEntity> classByCode = classService.getClassByCode(request.getCode());
         if (classByCode.isPresent()) {
-            ClassStudent classStudent = classService.addStudentToClass(classByCode.get(), student);
-            return ResponseEntity.ok(convertToDTO(classStudent.getClassEntity()));
+            ClassEntity classEntity = classByCode.get();
+            ClassStudent classStudent = classService.addStudentToClass(classEntity, student);
+            return ResponseEntity.ok(convertToDTO(classEntity));
         } else {
-            return ResponseEntity.ok(null);
+            return ResponseEntity.badRequest().build();
         }
-
-
     }
 
     @DeleteMapping("/{classId}/students/{studentId}")
@@ -92,7 +93,7 @@ public class ClassController {
         ClassEntity classEntity = classService.getClassById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Class not found"));
 
-        if (!classEntity.getTeacher().getId().equals(teacher.getId())) {
+        if (!classEntity.getTeacherId().equals(teacher.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -108,9 +109,13 @@ public class ClassController {
         dto.setId(classEntity.getId());
         dto.setName(classEntity.getName());
         dto.setCode(classEntity.getCode());
-        dto.setTeacherId(classEntity.getTeacher().getId());
-        dto.setTeacherName(classEntity.getTeacher().getUsername());
-        dto.setStudentCount(classEntity.getStudents().size());
+        dto.setTeacherId(classEntity.getTeacherId());
+        // 获取教师信息
+        User teacher = userService.getUserById(classEntity.getTeacherId())
+                .orElseThrow(() -> new IllegalArgumentException("Teacher not found"));
+        dto.setTeacherName(teacher.getUsername());
+        // 获取学生数量
+        dto.setStudentCount(classService.getStudentCount(classEntity.getId()));
         dto.setCreatedAt(classEntity.getCreatedAt().format(DATE_FORMATTER));
         return dto;
     }

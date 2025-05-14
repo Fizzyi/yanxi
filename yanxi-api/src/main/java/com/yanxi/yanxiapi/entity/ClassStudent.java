@@ -1,41 +1,43 @@
 package com.yanxi.yanxiapi.entity;
 
-import javax.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "class_student")
+@TableName("class_student")
 public class ClassStudent {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "class_id", nullable = false)
-    private ClassEntity classEntity;
+    /**
+     * 班级ID
+     */
+    @TableField("class_id")
+    private Long classId;
 
-    @ManyToOne
-    @JoinColumn(name = "student_id", nullable = false)
-    private User student;
+    /**
+     * 学生ID
+     */
+    @TableField("student_id")
+    private Long studentId;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    /**
+     * 创建时间
+     */
+    @TableField("joined_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    /**
+     * 更新时间
+     */
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    /**
+     * 逻辑删除标记
+     */
+    @TableLogic
+    private Integer deleted;
 } 
