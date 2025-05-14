@@ -107,8 +107,8 @@ public class ClassController {
     @GetMapping("/teacher/students")
     public ResponseEntity<List<User>> getTeacherAllStudents(
             @AuthenticationPrincipal User teacher,
-            @RequestParam(required = false) String email,
-            @RequestParam(required = false) Long classId) {
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "classId", required = false) Long classId) {
         List<User> students = classService.getTeacherAllStudents(teacher, email, classId);
         return ResponseEntity.ok(students);
     }
