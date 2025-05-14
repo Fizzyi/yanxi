@@ -116,7 +116,7 @@ public class ClassController {
         dto.setTeacherName(teacher.getUsername());
         // 获取学生数量
         dto.setStudentCount(classService.getStudentCount(classEntity.getId()));
-        dto.setCreatedAt(classEntity.getCreatedAt().format(DATE_FORMATTER));
+//        dto.setCreatedAt(classEntity.getCreatedAt().format(DATE_FORMATTER));
         return dto;
     }
 } 

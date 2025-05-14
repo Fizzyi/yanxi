@@ -3,6 +3,7 @@ package com.yanxi.yanxiapi.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @TableName("class_student")
@@ -26,18 +27,12 @@ public class ClassStudent {
     /**
      * 创建时间
      */
-    @TableField("joined_at")
-    private LocalDateTime createdAt;
+    @TableField(fill = FieldFill.INSERT)
+    private Date createdAt;
 
     /**
      * 更新时间
      */
-    @TableField("updated_at")
-    private LocalDateTime updatedAt;
-
-    /**
-     * 逻辑删除标记
-     */
-    @TableLogic
-    private Integer deleted;
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private Date updatedAt;
 } 
