@@ -2,13 +2,21 @@
   <div class="student-management">
     <div class="header-actions">
       <h2>Student Management</h2>
-      <div class="search-box">
-        <input 
-          type="text" 
-          v-model="searchQuery" 
-          placeholder="Search students..."
-          @input="handleSearch"
-        />
+      <div class="filters">
+        <select v-model="selectedClass" @change="handleClassChange" class="class-select">
+          <option value="">All Classes</option>
+          <option v-for="classItem in classes" :key="classItem.id" :value="classItem.id">
+            {{ classItem.name }}
+          </option>
+        </select>
+        <div class="search-box">
+          <input 
+            type="text" 
+            v-model="searchQuery" 
+            placeholder="Search by email..."
+            @input="handleSearch"
+          />
+        </div>
       </div>
     </div>
 
@@ -17,25 +25,32 @@
       <div v-else-if="filteredStudents.length === 0" class="empty-state">
         No students found.
       </div>
-      <div v-else class="student-grid">
-        <div v-for="student in filteredStudents" :key="student.id" class="student-card">
-          <div class="student-info">
-            <h3>{{ student.realName }}</h3>
-            <p class="email">{{ student.email }}</p>
-            <div class="student-stats">
-              <span><i class="fas fa-book"></i> {{ student.courseCount }} Courses</span>
-              <span><i class="fas fa-chalkboard"></i> {{ student.classCount }} Classes</span>
-            </div>
-          </div>
-          <div class="student-actions">
-            <button class="action-btn view" @click="viewStudentDetails(student)">
-              <i class="fas fa-eye"></i> View Details
-            </button>
-            <button class="action-btn edit" @click="editStudent(student)">
-              <i class="fas fa-edit"></i> Edit
-            </button>
-          </div>
-        </div>
+      <div v-else class="student-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="student in filteredStudents" :key="student.id">
+              <td>{{ student.realName }}</td>
+              <td>{{ student.email }}</td>
+              <td>{{ student.phone }}</td>
+              <td class="actions">
+                <button class="action-btn view" @click="viewStudentDetails(student)">
+                  <i class="fas fa-eye"></i> View
+                </button>
+                <button class="action-btn edit" @click="editStudent(student)">
+                  <i class="fas fa-edit"></i> Edit
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -113,8 +128,10 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 
 const students = ref([])
+const classes = ref([])
 const loading = ref(true)
 const searchQuery = ref('')
+const selectedClass = ref('')
 const showDetailsModal = ref(false)
 const showEditModal = ref(false)
 const selectedStudent = ref(null)
@@ -133,13 +150,35 @@ const filteredStudents = computed(() => {
   )
 })
 
-const fetchStudents = async () => {
+const fetchClasses = async () => {
   try {
-    loading.value = true
-    const response = await axios.get('http://localhost:8080/api/students', {
+    const response = await axios.get('http://localhost:8080/api/classes/teacher', {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`
       }
+    })
+    classes.value = response.data
+  } catch (error) {
+    console.error('Error fetching classes:', error)
+  }
+}
+
+const fetchStudents = async () => {
+  try {
+    loading.value = true
+    const params = {}
+    if (searchQuery.value) {
+      params.email = searchQuery.value
+    }
+    if (selectedClass.value) {
+      params.classId = selectedClass.value
+    }
+    
+    const response = await axios.get('http://localhost:8080/api/classes/teacher/students', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      params
     })
     students.value = response.data
   } catch (error) {
@@ -186,6 +225,10 @@ const handleSearch = () => {
   // 实时搜索，不需要额外处理
 }
 
+const handleClassChange = () => {
+  fetchStudents()
+}
+
 const closeDetailsModal = () => {
   showDetailsModal.value = false
   selectedStudent.value = null
@@ -199,7 +242,10 @@ const closeEditModal = () => {
   }
 }
 
-onMounted(fetchStudents)
+onMounted(() => {
+  fetchClasses()
+  fetchStudents()
+})
 </script>
 
 <style scoped>
@@ -214,6 +260,21 @@ onMounted(fetchStudents)
   margin-bottom: 30px;
 }
 
+.filters {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.class-select {
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  min-width: 200px;
+  background-color: white;
+}
+
 .search-box input {
   padding: 10px 15px;
   border: 1px solid #ddd;
@@ -222,61 +283,48 @@ onMounted(fetchStudents)
   width: 300px;
 }
 
-.student-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.student-card {
+.student-table {
   background: white;
   border-radius: 12px;
-  padding: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+  overflow: hidden;
 }
 
-.student-info h3 {
-  margin: 0 0 5px 0;
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  background-color: #f8f9fa;
+  font-weight: 600;
   color: #2c3e50;
 }
 
-.student-info .email {
-  color: #666;
-  margin: 0 0 15px 0;
+tr:hover {
+  background-color: #f8f9fa;
 }
 
-.student-stats {
-  display: flex;
-  gap: 15px;
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.student-stats span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.student-actions {
+.actions {
   display: flex;
   gap: 10px;
 }
 
 .action-btn {
-  flex: 1;
-  padding: 8px;
+  padding: 6px 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 5px;
-  font-weight: bold;
+  font-size: 0.9rem;
   transition: all 0.3s;
 }
 

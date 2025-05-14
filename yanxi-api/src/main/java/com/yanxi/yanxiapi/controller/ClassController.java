@@ -104,6 +104,15 @@ public class ClassController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/teacher/students")
+    public ResponseEntity<List<User>> getTeacherAllStudents(
+            @AuthenticationPrincipal User teacher,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) Long classId) {
+        List<User> students = classService.getTeacherAllStudents(teacher, email, classId);
+        return ResponseEntity.ok(students);
+    }
+
     private ClassDTO convertToDTO(ClassEntity classEntity) {
         ClassDTO dto = new ClassDTO();
         dto.setId(classEntity.getId());

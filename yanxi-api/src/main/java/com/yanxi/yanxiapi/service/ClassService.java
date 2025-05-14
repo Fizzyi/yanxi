@@ -1,5 +1,6 @@
 package com.yanxi.yanxiapi.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.yanxi.yanxiapi.entity.ClassEntity;
 import com.yanxi.yanxiapi.entity.ClassStudent;
 import com.yanxi.yanxiapi.entity.User;
@@ -10,7 +11,7 @@ import java.util.Optional;
 /**
  * 班级服务接口
  */
-public interface ClassService {
+public interface ClassService extends IService<ClassEntity> {
     /**
      * 获取教师的所有班级
      */
@@ -55,4 +56,13 @@ public interface ClassService {
      * 获取班级的学生数量
      */
     Integer getStudentCount(Long classId);
+
+    /**
+     * 获取老师所有班级的学生列表
+     * @param teacher 教师
+     * @param email 学生邮箱（可选）
+     * @param classId 班级ID（可选）
+     * @return 学生列表
+     */
+    List<User> getTeacherAllStudents(User teacher, String email, Long classId);
 }
