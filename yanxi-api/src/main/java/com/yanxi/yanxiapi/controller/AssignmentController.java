@@ -74,4 +74,18 @@ public class AssignmentController {
         List<User> students = assignmentService.getAssignmentStudents(assignmentId);
         return ResponseEntity.ok(students);
     }
+
+    /**
+     * 获取当前学生的作业列表
+     * @param submitted 是否已提交（可选）
+     * @param student 当前登录的学生
+     * @return 作业列表
+     */
+    @GetMapping("/student")
+    public ResponseEntity<List<Assignment>> getStudentAssignments(
+            @RequestParam(value = "submitted", required = false) Boolean submitted,
+            @AuthenticationPrincipal User student) {
+        List<Assignment> assignments = assignmentService.getStudentAssignments(submitted, student);
+        return ResponseEntity.ok(assignments);
+    }
 } 

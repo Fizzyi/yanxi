@@ -6,7 +6,10 @@
   
       <div class="class-section">
         <div class="section-header">
-          <h2>My Classes</h2>
+          <div class="header-tabs">
+            <h2 class="tab active">My Classes</h2>
+            <h2 class="tab" @click="goToAssignments">My Work</h2>
+          </div>
           <div class="join-class">
             <input 
               type="text" 
@@ -27,19 +30,33 @@
             <p>You haven't joined any classes yet</p>
             <p class="empty-tip">Enter a class code to join a new class</p>
           </div>
-          <div v-else v-for="classItem in classes" :key="classItem.id" class="class-card">
-            <div class="class-info">
-              <h3>{{ classItem.name }}</h3>
-              <p class="code">Class Code: {{ classItem.code }}</p>
-              <p class="teacher">Teacher: {{ classItem.teacherName }}</p>
-              <p class="students">Students: {{ classItem.studentCount }}</p>
-              <p class="created">Created: {{ classItem.createdAt }}</p>
-            </div>
-            <div class="class-actions">
-              <button class="action-btn view" @click="viewClassDetails(classItem)">
-                <i class="fas fa-eye"></i> View Details
-              </button>
-            </div>
+          <div v-else class="class-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>班级名称</th>
+                  <th>班级代码</th>
+                  <th>教师</th>
+                  <!-- <th>学生人数</th> -->
+                  <!-- <th>创建时间</th> -->
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="classItem in classes" :key="classItem.id">
+                  <td>{{ classItem.name }}</td>
+                  <td>{{ classItem.code }}</td>
+                  <td>{{ classItem.teacherName }}</td>
+                  <!-- <td>{{ classItem.studentCount }}</td> -->
+                  <!-- <td>{{ classItem.createdAt }}</td> -->
+                  <td>
+                    <button class="action-btn view" @click="viewClassDetails(classItem)">
+                      <i class="fas fa-eye"></i> 查看详情
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -82,8 +99,10 @@
   import { ref, onMounted } from 'vue'
   import axios from 'axios'
   import { ElMessageBox } from 'element-plus'
+  import { useRouter } from 'vue-router'
   import 'element-plus/dist/index.css'
   
+  const router = useRouter()
   const userInfo = ref({
     realName: localStorage.getItem('realName') || 'Student'
   })
@@ -165,13 +184,17 @@
     selectedClass.value = null
   }
   
+  const goToAssignments = () => {
+    router.push('/student/assignments')
+  }
+  
   onMounted(fetchClasses)
   </script>
   
   <style scoped>
   .student-home {
     padding: 20px;
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 0 auto;
     margin-top: 100px;
   }
@@ -200,6 +223,30 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
+    padding: 0 20px;
+  }
+  
+  .header-tabs {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  
+  .tab {
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.3s;
+    color: #666;
+  }
+  
+  .tab:hover {
+    background: #f5f5f5;
+  }
+  
+  .tab.active {
+    color: #4CAF50;
+    font-weight: bold;
   }
   
   .join-class {
@@ -234,50 +281,73 @@
   }
   
   .class-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    width: 100%;
   }
   
-  .class-card {
+  .class-table {
     background: white;
     border-radius: 12px;
-    padding: 20px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    transition: transform 0.3s;
+    overflow: hidden;
+    margin: 0 20px;
+    width: calc(100% - 40px);
   }
   
-  .class-card:hover {
-    transform: translateY(-5px);
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
   }
   
-  .class-info h3 {
-    margin: 0 0 5px 0;
+  th, td {
+    padding: 15px 20px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+  
+  th:nth-child(1) { width: 25%; }  /* 班级名称 */
+  th:nth-child(2) { width: 15%; }  /* 班级代码 */
+  th:nth-child(3) { width: 15%; }  /* 教师 */
+  th:nth-child(4) { width: 10%; }  /* 学生人数 */
+  th:nth-child(5) { width: 15%; }  /* 创建时间 */
+  th:nth-child(6) { width: 20%; }  /* 操作 */
+  
+  td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* 设置不同列的对齐方式 */
+  th:nth-child(4), td:nth-child(4) {  /* 学生人数 */
+    text-align: center;
+  }
+  
+  th:nth-child(5), td:nth-child(5) {  /* 创建时间 */
+    text-align: center;
+  }
+  
+  th:nth-child(6), td:nth-child(6) {  /* 操作 */
+    text-align: center;
+  }
+  
+  th {
+    background-color: #f8f9fa;
+    font-weight: 600;
     color: #2c3e50;
   }
   
-  .class-info p {
-    margin: 5px 0;
-    color: #666;
-  }
-  
-  .class-actions {
-    display: flex;
-    gap: 10px;
+  tr:hover {
+    background-color: #f8f9fa;
   }
   
   .action-btn {
-    flex: 1;
-    padding: 8px;
+    padding: 6px 12px;
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
     gap: 5px;
     font-weight: bold;
     transition: all 0.3s;

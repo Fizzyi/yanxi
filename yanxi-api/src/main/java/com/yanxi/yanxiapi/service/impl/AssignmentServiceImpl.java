@@ -101,4 +101,46 @@ public class AssignmentServiceImpl extends ServiceImpl<AssignmentMapper, Assignm
                 .map(userService::getById)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<Assignment> getStudentAssignments(Boolean submitted, User student) {
+        // 1. 获取学生所在的所有班级ID
+        List<Long> studentClassIds = classStudentMapper.selectClassIdsByStudentId(student.getId());
+        if (studentClassIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 2. 构建查询条件
+        LambdaQueryWrapper<Assignment> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(Assignment::getClassId, studentClassIds);
+        
+        // 3. 如果指定了提交状态，需要关联查询作业提交表
+        if (submitted != null) {
+            // 获取所有作业ID
+            List<Assignment> allAssignments = list(queryWrapper);
+            List<Long> assignmentIds = allAssignments.stream()
+                    .map(Assignment::getId)
+                    .collect(Collectors.toList());
+            
+            if (assignmentIds.isEmpty()) {
+                return Collections.emptyList();
+            }
+            
+            // 查询学生已提交的作业ID
+            List<Long> submittedAssignmentIds = baseMapper.selectSubmittedAssignmentIds(student.getId(), assignmentIds);
+            
+            if (submitted) {
+                // 只返回已提交的作业
+                queryWrapper.in(Assignment::getId, submittedAssignmentIds);
+            } else {
+                // 只返回未提交的作业
+                queryWrapper.notIn(Assignment::getId, submittedAssignmentIds);
+            }
+        }
+        
+        // 4. 按创建时间倒序排序
+        queryWrapper.orderByDesc(Assignment::getCreatedAt);
+        
+        return list(queryWrapper);
+    }
 } 

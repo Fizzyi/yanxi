@@ -29,4 +29,12 @@ public interface AssignmentService extends IService<Assignment> {
      * @return 学生列表
      */
     List<User> getAssignmentStudents(Long assignmentId);
+
+    /**
+     * 获取当前学生的作业列表
+     * @param submitted 是否已提交（可选）
+     * @param student 当前登录的学生
+     * @return 作业列表
+     */
+    List<Assignment> getStudentAssignments(Boolean submitted, User student);
 } 

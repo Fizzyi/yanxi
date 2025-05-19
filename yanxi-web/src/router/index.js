@@ -9,6 +9,7 @@ import ClassManagement from '../views/teacher/ClassManagement.vue'
 import StudentManagement from '../views/teacher/StudentManagement.vue'
 import AssignmentManagement from '../views/teacher/AssignmentManagement.vue'
 import StudentHome from '../views/student/Home.vue'
+import StudentAssignmentManagement from '../views/student/AssignmentManagement.vue'
 import TeacherLayout from '../views/teacher/TeacherLayout.vue'
 
 const router = createRouter({
@@ -78,6 +79,18 @@ const router = createRouter({
       path: '/student',
       name: 'student',
       component: StudentHome,
+      meta: { requiresAuth: true, requiresStudent: true }
+    },
+    {
+      path: '/student/home',
+      name: 'student',
+      component: StudentHome,
+      meta: { requiresAuth: true, requiresStudent: true }
+    },
+    {
+      path: '/student/assignments',
+      name: 'student-assignments',
+      component: StudentAssignmentManagement,
       meta: { requiresAuth: true, requiresStudent: true }
     }
   ]
