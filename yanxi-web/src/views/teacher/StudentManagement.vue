@@ -1,7 +1,7 @@
 <template>
   <div class="student-management">
     <div class="header-actions">
-      <h2>Student Management</h2>
+      <h2></h2>
       <div class="filters">
         <select v-model="selectedClass" @change="handleClassChange" class="class-select">
           <option value="">All Classes</option>

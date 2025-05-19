@@ -32,7 +32,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeRequests()
-                .antMatchers("/api/users/register/**", "/api/users/login").permitAll()
+                .antMatchers(
+                    "/api/users/register/**", 
+                    "/api/users/login",
+                    "/api/assignments/download").permitAll()
                 .anyRequest().authenticated();
     }
 } 

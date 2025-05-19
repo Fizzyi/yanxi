@@ -7,7 +7,9 @@ import Login from '../views/Login.vue'
 import SignUp from '../views/SignUp.vue'
 import ClassManagement from '../views/teacher/ClassManagement.vue'
 import StudentManagement from '../views/teacher/StudentManagement.vue'
+import AssignmentManagement from '../views/teacher/AssignmentManagement.vue'
 import StudentHome from '../views/student/Home.vue'
+import TeacherLayout from '../views/teacher/TeacherLayout.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -45,7 +47,7 @@ const router = createRouter({
     {
       path: '/teacher',
       name: 'teacher',
-      component: () => import('../views/teacher/TeacherLayout.vue'),
+      component: TeacherLayout,
       meta: { requiresAuth: true, requiresTeacher: true },
       children: [
         {
@@ -62,6 +64,12 @@ const router = createRouter({
           path: 'students',
           name: 'student-management',
           component: StudentManagement,
+          meta: { requiresAuth: true, requiresTeacher: true }
+        },
+        {
+          path: 'assignments',
+          name: 'assignment-management',
+          component: AssignmentManagement,
           meta: { requiresAuth: true, requiresTeacher: true }
         }
       ]

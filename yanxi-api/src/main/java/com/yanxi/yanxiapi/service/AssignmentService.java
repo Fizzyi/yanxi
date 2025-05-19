@@ -22,4 +22,11 @@ public interface AssignmentService extends IService<Assignment> {
      * @return 作业列表
      */
     List<Assignment> getAssignments(Long classId, String studentEmail, User teacher);
+
+    /**
+     * 获取作业的学生列表
+     * @param assignmentId 作业ID
+     * @return 学生列表
+     */
+    List<User> getAssignmentStudents(Long assignmentId);
 } 

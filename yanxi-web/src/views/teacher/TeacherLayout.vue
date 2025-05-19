@@ -17,6 +17,13 @@
         >
           Student Management
         </button>
+        <button 
+          class="tab-btn" 
+          :class="{ active: activeTab === 'assignments' }"
+          @click="handleTabChange('assignments')"
+        >
+          Assignment Management
+        </button>
       </div>
     </div>
     
@@ -31,7 +38,7 @@ import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ClassManagement from './ClassManagement.vue'
 import StudentManagement from './StudentManagement.vue'
-
+import AssignmentManagement from './AssignmentManagement.vue'
 const route = useRoute()
 const router = useRouter()
 const activeTab = ref('classes')
@@ -40,13 +47,21 @@ const activeTab = ref('classes')
 watch(() => route.path, (path) => {
   if (path.includes('/students')) {
     activeTab.value = 'students'
+  } else if (path.includes('/assignments')) {
+    activeTab.value = 'assignments'
   } else {
     activeTab.value = 'classes'
   }
 }, { immediate: true })
 
 const currentComponent = computed(() => {
-  return activeTab.value === 'classes' ? ClassManagement : StudentManagement
+  if (activeTab.value === 'classes') {    
+    return ClassManagement
+  } else if (activeTab.value === 'students') {
+    return StudentManagement
+  } else if (activeTab.value === 'assignments') {
+    return AssignmentManagement
+  }
 })
 
 // 处理标签切换
@@ -54,8 +69,10 @@ const handleTabChange = (tab) => {
   activeTab.value = tab
   if (tab === 'classes') {
     router.push('/teacher/classes')
-  } else {
+  } else if (tab === 'students') {
     router.push('/teacher/students')
+  } else if (tab === 'assignments') {
+    router.push('/teacher/assignments')
   }
 }
 </script>

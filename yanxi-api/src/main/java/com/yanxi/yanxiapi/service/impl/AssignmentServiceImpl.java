@@ -81,4 +81,24 @@ public class AssignmentServiceImpl extends ServiceImpl<AssignmentMapper, Assignm
             throw new RuntimeException("文件上传失败: " + e.getMessage());
         }
     }
+
+    @Override
+    public List<User> getAssignmentStudents(Long assignmentId) {
+        // 1. 获取作业信息
+        Assignment assignment = getById(assignmentId);
+        if (assignment == null) {
+            throw new RuntimeException("作业不存在");
+        }
+
+        // 2. 获取该作业所属班级的所有学生ID
+        List<Long> studentIds = classStudentMapper.selectStudentIdsByClassId(assignment.getClassId());
+        if (studentIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 3. 获取学生详细信息
+        return studentIds.stream()
+                .map(userService::getById)
+                .collect(Collectors.toList());
+    }
 } 
