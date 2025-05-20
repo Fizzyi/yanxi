@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://121.43.238.143:8036/yanxi?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8
-    username: root
-    password: qwer1234
+    url: jdbc:mysql://121.43.238.143:8036/yanxi?useSSL=true&serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    username: yanxi
+    password: yanxi123
     driver-class-name: com.mysql.cj.jdbc.Driver
   servlet:
     multipart:
