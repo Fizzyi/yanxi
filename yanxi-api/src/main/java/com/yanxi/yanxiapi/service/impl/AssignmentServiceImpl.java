@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yanxi.yanxiapi.entity.Assignment;
 import com.yanxi.yanxiapi.entity.User;
+import com.yanxi.yanxiapi.entity.AssignmentSubmission;
 import com.yanxi.yanxiapi.mapper.AssignmentMapper;
 import com.yanxi.yanxiapi.mapper.ClassStudentMapper;
 import com.yanxi.yanxiapi.service.AssignmentService;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -114,33 +116,75 @@ public class AssignmentServiceImpl extends ServiceImpl<AssignmentMapper, Assignm
         LambdaQueryWrapper<Assignment> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.in(Assignment::getClassId, studentClassIds);
         
-        // 3. 如果指定了提交状态，需要关联查询作业提交表
+        // 3. 获取所有符合条件的作业
+        List<Assignment> assignments = list(queryWrapper);
+        if (assignments.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 4. 获取所有作业ID
+        List<Long> assignmentIds = assignments.stream()
+                .map(Assignment::getId)
+                .collect(Collectors.toList());
+        
+        // 5. 查询学生已提交的作业ID
+        List<Long> submittedAssignmentIds = baseMapper.selectSubmittedAssignmentIds(student.getId());
+        
+        // 6. 为每个作业添加 submitted 字段
+        assignments.forEach(assignment -> {
+            assignment.setSubmitted(submittedAssignmentIds.contains(assignment.getId()));
+        });
+        
+        // 7. 如果指定了提交状态，进行过滤
         if (submitted != null) {
-            // 获取所有作业ID
-            List<Assignment> allAssignments = list(queryWrapper);
-            List<Long> assignmentIds = allAssignments.stream()
-                    .map(Assignment::getId)
+            assignments = assignments.stream()
+                    .filter(assignment -> assignment.getSubmitted().equals(submitted))
                     .collect(Collectors.toList());
-            
-            if (assignmentIds.isEmpty()) {
-                return Collections.emptyList();
-            }
-            
-            // 查询学生已提交的作业ID
-            List<Long> submittedAssignmentIds = baseMapper.selectSubmittedAssignmentIds(student.getId(), assignmentIds);
-            
-            if (submitted) {
-                // 只返回已提交的作业
-                queryWrapper.in(Assignment::getId, submittedAssignmentIds);
-            } else {
-                // 只返回未提交的作业
-                queryWrapper.notIn(Assignment::getId, submittedAssignmentIds);
-            }
         }
         
-        // 4. 按创建时间倒序排序
-        queryWrapper.orderByDesc(Assignment::getCreatedAt);
+        // 8. 按创建时间倒序排序
+        assignments.sort((a1, a2) -> a2.getCreatedAt().compareTo(a1.getCreatedAt()));
         
-        return list(queryWrapper);
+        return assignments;
+    }
+
+    @Override
+    @Transactional
+    public Assignment submitAssignment(Long assignmentId, MultipartFile file, User student) {
+        // 1. 获取作业信息
+        Assignment assignment = getById(assignmentId);
+        if (assignment == null) {
+            throw new RuntimeException("作业不存在");
+        }
+
+        // 2. 检查学生是否在该作业所属的班级中
+        List<Long> studentClassIds = classStudentMapper.selectClassIdsByStudentId(student.getId());
+        if (!studentClassIds.contains(assignment.getClassId())) {
+            throw new RuntimeException("您不在该作业所属的班级中");
+        }
+
+//        // 3. 检查是否已过截止时间
+//        if (assignment.getDueDate().isBefore(LocalDateTime.now())) {
+//            throw new RuntimeException("作业已过截止时间");
+//        }
+
+        try {
+            // 4. 保存文件
+            String fileUrl = FileUtils.saveFile(file);
+
+            // 5. 创建或更新作业提交记录
+            AssignmentSubmission submission = new AssignmentSubmission();
+            submission.setAssignmentId(assignmentId);
+            submission.setStudentId(student.getId());
+            submission.setFileUrl(fileUrl);
+            submission.setSubmittedAt(LocalDateTime.now());
+
+            // 保存提交记录
+            baseMapper.insertSubmission(submission);
+
+            return assignment;
+        } catch (IOException e) {
+            throw new RuntimeException("文件上传失败: " + e.getMessage());
+        }
     }
 } 

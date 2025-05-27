@@ -49,15 +49,13 @@
                   </el-tag>
                 </td>
                 <td>
-                    <button class="action-btn download" 
-                    @click="handleUpload(assignment)">
-                    <i class="fas fa-upload"></i> 下载作业
-                    </button>
-
+                  <button class="action-btn download" @click="handleDownload(assignment)">
+                    <i class="fas fa-download"></i> 下载作业
+                  </button>
                   <button 
                     v-if="!assignment.submitted" 
                     class="action-btn submit" 
-                    @click="handleUpload(assignment)"
+                    @click="openUploadModal(assignment)"
                   >
                     <i class="fas fa-upload"></i> 提交作业
                   </button>
@@ -75,19 +73,72 @@
         </div>
       </div>
     </div>
+
+    <!-- 作业上传弹窗 -->
+    <el-dialog v-model="showUploadModal" title="提交作业" width="400px">
+      <input type="file" @change="handleFileChange" />
+      <template #footer>
+        <el-button @click="showUploadModal = false">取消</el-button>
+        <el-button type="primary" :loading="uploading" @click="submitAssignment">提交</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElSelect, ElOption, ElTag, ElButton, ElDialog } from 'element-plus'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import 'element-plus/dist/index.css'
 
 const router = useRouter()
 const loading = ref(false)
 const assignmentList = ref([])
 const filterSubmitted = ref(null)
+
+// 上传相关
+const showUploadModal = ref(false)
+const uploadAssignmentId = ref(null)
+const uploadFile = ref(null)
+const uploading = ref(false)
+
+const openUploadModal = (assignment) => {
+  uploadAssignmentId.value = assignment.id
+  showUploadModal.value = true
+  uploadFile.value = null
+}
+const handleFileChange = (e) => {
+  uploadFile.value = e.target.files[0]
+}
+const submitAssignment = async () => {
+  if (!uploadFile.value) {
+    ElMessage.warning('请选择文件')
+    return
+  }
+  uploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', uploadFile.value)
+    await axios.post(
+      `http://localhost:8080/api/assignments/${uploadAssignmentId.value}/submit`,
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+    ElMessage.success('提交成功')
+    showUploadModal.value = false
+    fetchAssignments()
+  } catch (e) {
+    ElMessage.error('提交失败')
+  } finally {
+    uploading.value = false
+  }
+}
 
 const fetchAssignments = async () => {
   try {
@@ -128,23 +179,22 @@ const formatDate = (date) => {
   }
 }
 
-const handleUpload = (assignment) => {
-    
-    var down_url = 'http://localhost:8080/api/assignments/download?fileUrl=' + assignment.fileUrl
-    axios({
-          url:down_url,
-          method: 'GET',
-          responseType: 'blob'
-        }).then((response) => {
-          const href = URL.createObjectURL(response.data);
-          const link = document.createElement('a');
-          link.href = href;
-          link.setAttribute('download',  assignment.fileUrl);
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(href);
-        });
+const handleDownload = (assignment) => {
+  var down_url = 'http://localhost:8080/api/assignments/download?fileUrl=' + assignment.fileUrl
+  axios({
+    url: down_url,
+    method: 'GET',
+    responseType: 'blob'
+  }).then((response) => {
+    const href = URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = href;
+    link.setAttribute('download', assignment.fileUrl);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(href);
+  });
 }
 
 const handleViewSubmission = (assignment) => {
@@ -291,5 +341,14 @@ tr:hover {
 
 .action-btn.view:hover {
   background: #BBDEFB;
+}
+
+.action-btn.download {
+  background: #FFF3E0;
+  color: #FF9800;
+}
+
+.action-btn.download:hover {
+  background: #FFE0B2;
 }
 </style>

@@ -33,6 +33,16 @@ public class AssignmentController {
         return ResponseEntity.ok(assignments);
     }
 
+    /**
+     *  创建作业
+     * @param classId
+     * @param title
+     * @param description
+     * @param file
+     * @param dueDate
+     * @param teacher
+     * @return
+     */
     @PostMapping
     public ResponseEntity<Assignment> createAssignment(
             @RequestParam("classId") Long classId,
@@ -87,5 +97,21 @@ public class AssignmentController {
             @AuthenticationPrincipal User student) {
         List<Assignment> assignments = assignmentService.getStudentAssignments(submitted, student);
         return ResponseEntity.ok(assignments);
+    }
+
+    /**
+     * 学生提交作业
+     * @param assignmentId 作业ID
+     * @param file 作业文件
+     * @param student 当前登录的学生
+     * @return 更新后的作业信息
+     */
+    @PostMapping("/{assignmentId}/submit")
+    public ResponseEntity<Assignment> submitAssignment(
+            @PathVariable Long assignmentId,
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal User student) {
+        Assignment assignment = assignmentService.submitAssignment(assignmentId, file, student);
+        return ResponseEntity.ok(assignment);
     }
 } 

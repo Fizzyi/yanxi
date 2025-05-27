@@ -60,4 +60,10 @@ public class Assignment {
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
+
+    /**
+     * 是否已提交（非数据库字段）
+     */
+    @TableField(exist = false)
+    private Boolean submitted;
 } 
