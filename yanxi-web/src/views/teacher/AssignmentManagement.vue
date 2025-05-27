@@ -375,28 +375,8 @@
   }
   
   // 对话框打开后加载数据
-  const handleDialogOpened = async () => {
-    if (!currentAssignment.value) {
-      studentDialogVisible.value = false
-      return
-    }
-    
-    try {
-      loadingStudents.value = true
-      studentList.value = [] // 清空之前的数据
-      const response = await axios.get(`http://localhost:8080/api/assignments/${currentAssignment.value.id}/students`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      studentList.value = response.data
-    } catch (error) {
-      console.error('获取学生列表失败:', error)
-      ElMessage.error('获取学生列表失败')
-      studentDialogVisible.value = false
-    } finally {
-      loadingStudents.value = false
-    }
+  const handleDialogOpened = () => {
+    // 对话框打开时不需要重新加载数据，因为数据已经在点击按钮时加载完成
   }
   
   // 对话框关闭时清空数据

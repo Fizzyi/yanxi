@@ -26,8 +26,8 @@ public class AssignmentController {
 
     @GetMapping
     public ResponseEntity<List<Assignment>> getAssignments(
-            @RequestParam(required = false) Long classId,
-            @RequestParam(required = false) String studentEmail,
+            @RequestParam(name = "classId", required = false) Long classId,
+            @RequestParam(name = "studentEmail", required = false) String studentEmail,
             @AuthenticationPrincipal User teacher) {
         List<Assignment> assignments = assignmentService.getAssignments(classId, studentEmail, teacher);
         return ResponseEntity.ok(assignments);
