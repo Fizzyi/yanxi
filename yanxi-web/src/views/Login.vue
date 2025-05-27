@@ -75,7 +75,7 @@ const handleSubmit = async () => {
       if (response.data.userRole === 'TEACHER') {
         router.push('/teacher/classes')
       } else {
-        router.push('/student')
+        router.push({ name: 'student-home' })
       }
     }, 1500)
   } catch (err) {

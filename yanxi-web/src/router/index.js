@@ -83,7 +83,7 @@ const router = createRouter({
     },
     {
       path: '/student/home',
-      name: 'student',
+      name: 'student-home',
       component: StudentHome,
       meta: { requiresAuth: true, requiresStudent: true }
     },
