@@ -43,7 +43,6 @@
                 <td>{{ assignment.description }}</td>
                 <td>{{ assignment.classId }}</td>
                 <td>{{ formatDate(assignment.createdAt) }}</td>
-                
                 <td class="actions">
                   <button class="action-btn edit" @click="handleEdit(assignment)">
                     <i class="fas fa-edit"></i> 编辑
@@ -54,6 +53,56 @@
                   <button class="action-btn delete" @click="handleDelete(assignment)">
                     <i class="fas fa-trash"></i> 删除
                   </button>
+                </td>
+              </tr>
+              <!-- 展开的详情行 -->
+              <tr v-if="currentAssignment" class="detail-row">
+                <td colspan="5">
+                  <div class="detail-content">
+                    <div class="detail-header">
+                      <h3>作业提交详情</h3>
+                      <button class="close-btn" @click="handleCloseDetail">×</button>
+                    </div>
+                    <div v-if="loadingStudents" class="loading">加载学生列表中...</div>
+                    <div v-else-if="!studentList || studentList.length === 0" class="empty-state">
+                      暂无学生数据
+                    </div>
+                    <div v-else class="student-table">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>学生姓名</th>
+                            <th>邮箱</th>
+                            <th>提交状态</th>
+                            <th>提交时间</th>
+                            <th>操作</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="student in studentList" :key="student.id">
+                            <td>{{ student.username }}</td>
+                            <td>{{ student.email }}</td>
+                            <td>
+                              <el-tag :type="student.submitted ? 'success' : 'warning'">
+                                {{ student.submitted ? '已提交' : '未提交' }}
+                              </el-tag>
+                            </td>
+                            <td>{{ student.submitted ? formatDate(student.submittedAt) : '-' }}</td>
+                            <td>
+                              <el-button 
+                                type="primary" 
+                                size="small"
+                                v-if="student.submitted"
+                                @click="handleDownloadSubmission(student.submissionId)"
+                              >
+                                下载作业
+                              </el-button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -355,20 +404,28 @@
   // 查看学生列表
   const handleViewStudents = async (assignment) => {
     try {
+      // 如果点击的是当前展开的作业，则关闭详情
+      // if (currentAssignment.value && currentAssignment.value.id === assignment.id) {
+      //   handleCloseDetail()
+      //   return
+      // }
+      
       loadingStudents.value = true
-      currentAssignment.value = assignment
       studentList.value = [] // 清空之前的数据
+      currentAssignment.value = assignment
       
       const response = await axios.get(`http://localhost:8080/api/assignments/${assignment.id}/students`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       })
-      studentList.value = response.data
-      studentDialogVisible.value = true
+      studentList.value = response.data || []
+      console.log(currentAssignment.value)
+      console.log(assignment)
     } catch (error) {
       console.error('获取学生列表失败:', error)
       ElMessage.error('获取学生列表失败')
+      handleCloseDetail()
     } finally {
       loadingStudents.value = false
     }
@@ -395,6 +452,13 @@
   // 禁用过去的日期
   const disabledDate = (time) => {
     return time.getTime() < Date.now() - 8.64e7
+  }
+  
+  // 关闭详情
+  const handleCloseDetail = () => {
+    currentAssignment.value = null
+    studentList.value = []
+    loadingStudents.value = false
   }
   
   onMounted(() => {
@@ -573,5 +637,50 @@
   
   .student-table tr:hover {
     background-color: #f8f9fa;
+  }
+  
+  .detail-row {
+    background-color: #f8f9fa;
+  }
+  
+  .detail-content {
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 10px;
+  }
+  
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .detail-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.2rem;
+  }
+  
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #666;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+  }
+  
+  .close-btn:hover {
+    color: #333;
+  }
+  
+  .student-table {
+    margin-top: 0;
   }
   </style>
