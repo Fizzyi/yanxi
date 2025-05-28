@@ -93,7 +93,7 @@
                                 type="primary" 
                                 size="small"
                                 v-if="student.submitted"
-                                @click="handleDownloadSubmission(student.submissionId)"
+                                @click="handleDownloadSubmission(student.submissionFileUrl)"
                               >
                                 下载作业
                               </el-button>
@@ -200,7 +200,7 @@
                       type="primary" 
                       size="small"
                       v-if="student.submitted"
-                      @click="handleDownloadSubmission(student.submissionId)"
+                      @click="handleDownloadSubmission(student.submissionFileUrl)"
                     >
                       下载作业
                     </el-button>
@@ -444,9 +444,22 @@
   }
   
   // 下载学生提交的作业
-  const handleDownloadSubmission = (submissionId) => {
-    // TODO: 实现下载学生提交的作业
-    ElMessage.info('下载功能开发中...')
+  const handleDownloadSubmission = (fileUrl) => {
+    var down_url = 'http://localhost:8080/api/assignments/download?fileUrl=' +fileUrl
+    axios({
+      url: down_url,
+      method: 'GET',
+      responseType: 'blob'
+    }).then((response) => {
+      const href = URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = href;
+      link.setAttribute('download', fileUrl);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(href);
+    });
   }
   
   // 禁用过去的日期
