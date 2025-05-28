@@ -62,4 +62,16 @@ public class User {
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private Date updatedAt;
+
+    @TableField(exist = false)
+    private Boolean submitted;
+
+    @TableField(exist = false)
+    private LocalDateTime submittedAt;
+
+    @TableField(exist = false)
+    private Long submissionId;
+
+    @TableField(exist = false)
+    private String submissionFileUrl;
 } 
