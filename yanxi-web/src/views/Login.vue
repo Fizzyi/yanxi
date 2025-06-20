@@ -73,9 +73,9 @@ const handleSubmit = async () => {
     // 根据身份跳转
     setTimeout(() => {
       if (response.data.userRole === 'TEACHER') {
-        router.push('/teacher/classes')
+        window.location.href = '/teacher/classes'
       } else {
-        router.push({ name: 'student-home' })
+        window.location.href = '/student/home'
       }
     }, 1500)
   } catch (err) {
