@@ -60,7 +60,7 @@ mysql -u root -p yanxi < db_schema.sql
 
 2. 启动后端服务
 ```bash
-cd yanxi-backend
+cd yanxi-api
 mvn spring-boot:run
 ```
 
