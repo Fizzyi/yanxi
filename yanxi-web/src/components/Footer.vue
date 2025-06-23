@@ -43,7 +43,7 @@
   color: #fff;
   padding: 48px 0 24px 0;
   width: 100vw;
-  position: sticky;
+  position: relative;
   left: 50%;
   right: 50%;
   transform: translateX(-50%);
