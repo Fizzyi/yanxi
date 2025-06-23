@@ -366,6 +366,7 @@
       console.error('保存作业失败:', error)
       ElMessage.error('保存失败')
     }
+
   }
   
   // 处理文件上传成功
@@ -696,4 +697,4 @@
   .student-table {
     margin-top: 0;
   }
-  </style>
+  </style>  </style>
