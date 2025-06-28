@@ -66,4 +66,10 @@ public class Assignment {
      */
     @TableField(exist = false)
     private Boolean submitted;
+
+    /**
+     * 班级名称（非数据库字段）
+     */
+    @TableField(exist = false)
+    private String className;
 } 

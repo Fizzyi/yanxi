@@ -121,11 +121,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         Map<String, String> response = new HashMap<>();
         response.put("token", token);
         response.put("userRole", user.getUserType());
+        response.put("realName", user.getRealName());
         return response;
     }
 
     @Override
     public User getByEmail(String email) {
-        return null;
+        return userMapper.findByEmail(email);
     }
 } 
