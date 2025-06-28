@@ -66,6 +66,7 @@ const handleSubmit = async () => {
     // 保存token和userRole到localStorage
     localStorage.setItem('token', response.data.token)
     localStorage.setItem('userRole', response.data.userRole)
+    localStorage.setItem('realName', response.data.realName)
     
     // 显示成功消息
     success.value = 'Login successful! Redirecting...'

@@ -1,6 +1,6 @@
 <template>
   <div class="home-hero">
-    <h1>言磎精品中文</h1>
+    <h1>言磎精品课堂</h1>
     <p class="subtitle">快乐学习语文数学！</p>
     <div class="btn-group">
       <button class="btn btn-white">查看课程</button>

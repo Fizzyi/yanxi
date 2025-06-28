@@ -18,6 +18,7 @@ onMounted(() => {
 const handleLogout = () => {
   localStorage.removeItem('token')
   localStorage.removeItem('userRole')
+  localStorage.removeItem('realName')
   isLoggedIn.value = false
   userRole.value = ''
   router.push('/login')
@@ -34,8 +35,10 @@ const handleLogout = () => {
         <div class="nav-links">
           <router-link to="/">Home</router-link> |
           <router-link to="/about">About</router-link> |
-          <router-link to="/courses">Courses</router-link> |
-          <router-link to="/resources">Resources</router-link>
+          <router-link to="/courses">Courses</router-link>
+          <template v-if="isLoggedIn">
+            | <router-link to="/resources">Resources</router-link>
+          </template>
           <template v-if="!isLoggedIn">
             <router-link class="nav-btn nav-login" to="/login">Log In</router-link>
             <router-link class="nav-btn nav-signup" to="/signup">Sign Up</router-link>
@@ -50,7 +53,9 @@ const handleLogout = () => {
     </nav>
   </header>
 
-  <router-view/>
+  <div class="main-content">
+    <router-view/>
+  </div>
   <Footer />
 </template>
 
@@ -64,6 +69,14 @@ const handleLogout = () => {
   background-color: #ffffff;
   margin-top: 0;
   padding-top: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding-top: 120px; /* Account for fixed header */
 }
 
 header {

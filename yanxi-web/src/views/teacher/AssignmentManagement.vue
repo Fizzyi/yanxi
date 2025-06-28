@@ -31,7 +31,7 @@
               <tr>
                 <th>作业标题</th>
                 <th>作业描述</th>
-                <th>班级ID</th>
+                <th>班级名称</th>
                 <th>创建时间</th>
                 <!-- <th>附件</th> -->
                 <th>操作</th>
@@ -41,7 +41,7 @@
               <tr v-for="assignment in assignmentList" :key="assignment.id">
                 <td>{{ assignment.title }}</td>
                 <td>{{ assignment.description }}</td>
-                <td>{{ assignment.classId }}</td>
+                <td>{{ getClassName(assignment.classId) }}</td>
                 <td>{{ formatDate(assignment.createdAt) }}</td>
                 <td class="actions">
                   <button class="action-btn edit" @click="handleEdit(assignment)">
@@ -93,7 +93,7 @@
                                 type="primary" 
                                 size="small"
                                 v-if="student.submitted"
-                                @click="handleDownloadSubmission(student.submissionFileUrl)"
+                                @click="handleDownloadSubmission(student)"
                               >
                                 下载作业
                               </el-button>
@@ -138,18 +138,31 @@
               v-model="editForm.dueDate"
               type="datetime"
               placeholder="选择截止日期"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              style="width: 100%"
+              clearable
               :disabled-date="disabledDate"
             />
+            <div style="margin-top: 5px; color: #909399; font-size: 12px;">
+              请选择作业的截止时间（不能选择过去的日期）
+            </div>
           </el-form-item>
           <el-form-item label="附件">
             <el-upload
               class="upload-demo"
-              :action="uploadUrl"
-              :on-success="handleUploadSuccess"
+              :auto-upload="false"
+              :on-change="handleFileChange"
               :before-upload="beforeUpload"
-              :headers="uploadHeaders"
+              :limit="1"
+              :file-list="fileList"
             >
-        
+              <el-button type="primary">选择文件</el-button>
+              <template #tip>
+                <div class="el-upload__tip">
+                  支持上传 .pdf, .doc, .docx, .txt 文件，且不超过 10MB
+                </div>
+              </template>
             </el-upload>
           </el-form-item>
         </el-form>
@@ -200,7 +213,7 @@
                       type="primary" 
                       size="small"
                       v-if="student.submitted"
-                      @click="handleDownloadSubmission(student.submissionFileUrl)"
+                      @click="handleDownloadSubmission(student)"
                     >
                       下载作业
                     </el-button>
@@ -211,6 +224,8 @@
           </div>
         </template>
       </el-dialog>
+
+
     </div>
   </template>
   
@@ -225,10 +240,12 @@
   const classList = ref([])
   const studentList = ref([])
   const editFormRef = ref(null)
-  const uploadUrl = import.meta.env.VITE_API_URL + '/api/assignments/upload'
+
   const studentDialogVisible = ref(false)
   const loadingStudents = ref(false)
   const currentAssignment = ref(null)
+  const currentFile = ref(null)
+  const fileList = ref([])
   
   const filterForm = ref({
     classId: '',
@@ -250,10 +267,10 @@
     classId: [{ required: true, message: '请选择班级', trigger: 'change' }],
     dueDate: [{ required: true, message: '请选择截止日期', trigger: 'change' }]
   }
+
+
   
-  const uploadHeaders = {
-    Authorization: `Bearer ${localStorage.getItem('token')}`
-  }
+
   
   // 获取作业列表
   const fetchAssignments = async () => {
@@ -322,6 +339,8 @@
       dueDate: null,
       fileUrl: ''
     }
+    currentFile.value = null
+    fileList.value = []
     dialogVisible.value = true
   }
   
@@ -337,12 +356,17 @@
       await ElMessageBox.confirm('确定要删除这个作业吗？', '提示', {
         type: 'warning'
       })
-      await axios.delete(`/api/assignments/${row.id}`)
+      await axios.delete(`http://localhost:8080/api/assignments/${row.id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
       ElMessage.success('删除成功')
       fetchAssignments()
     } catch (error) {
       if (error !== 'cancel') {
-        ElMessage.error('删除失败')
+        console.error('删除作业失败:', error)
+        ElMessage.error('删除失败: ' + (error.response?.data?.message || error.message))
       }
     }
   }
@@ -353,25 +377,63 @@
     
     try {
       await editFormRef.value.validate()
-      const url = editForm.value.id 
-        ? `/api/assignments/${editForm.value.id}`
-        : '/api/assignments'
-      const method = editForm.value.id ? 'put' : 'post'
       
-      await axios[method](url, editForm.value)
-      ElMessage.success(editForm.value.id ? '更新成功' : '发布成功')
+      if (editForm.value.id) {
+        // 编辑作业 - 暂时不支持
+        ElMessage.warning('暂不支持编辑作业功能')
+        return
+      }
+      
+      // 创建新作业
+      if (!currentFile.value) {
+        ElMessage.error('请先选择作业文件')
+        return
+      }
+      
+      // 验证截止日期
+      if (!editForm.value.dueDate) {
+        ElMessage.error('请选择截止日期')
+        return
+      }
+      
+      const formData = new FormData()
+      formData.append('classId', editForm.value.classId)
+      formData.append('title', editForm.value.title)
+      formData.append('description', editForm.value.description)
+      
+      // 格式化日期为 ISO_LOCAL_DATE_TIME 格式 (YYYY-MM-DDTHH:mm:ss)
+      const dueDateStr = editForm.value.dueDate.replace(' ', 'T')
+      formData.append('dueDate', dueDateStr)
+      formData.append('file', currentFile.value)
+      
+      // 调试信息
+      console.log('FormData contents:')
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value)
+      }
+      
+      await axios.post('http://localhost:8080/api/assignments', formData, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      ElMessage.success('发布成功')
       dialogVisible.value = false
       fetchAssignments()
     } catch (error) {
       console.error('保存作业失败:', error)
-      ElMessage.error('保存失败')
+      ElMessage.error('保存失败: ' + (error.response?.data?.message || error.message))
     }
   }
   
-  // 处理文件上传成功
-  const handleUploadSuccess = (response) => {
-    editForm.value.fileUrl = response.data
-    ElMessage.success('文件上传成功')
+  // 处理文件选择
+  const handleFileChange = (file, fileListParam) => {
+    currentFile.value = file.raw
+    editForm.value.fileUrl = file.name
+    fileList.value = fileListParam
+    ElMessage.success('文件选择成功')
   }
   
   // 上传前检查
@@ -381,6 +443,15 @@
       ElMessage.error('文件大小不能超过 10MB!')
       return false
     }
+    
+    const allowedTypes = ['.pdf', '.doc', '.docx', '.txt']
+    const fileName = file.name.toLowerCase()
+    const isValidType = allowedTypes.some(type => fileName.endsWith(type))
+    if (!isValidType) {
+      ElMessage.error('只支持上传 .pdf, .doc, .docx, .txt 格式的文件!')
+      return false
+    }
+    
     return true
   }
   
@@ -399,6 +470,12 @@
       console.error('日期格式化错误:', error)
       return date
     }
+  }
+  
+  // 获取班级名称
+  const getClassName = (classId) => {
+    const classItem = classList.value.find(item => item.id === classId)
+    return classItem ? classItem.name : '未知班级'
   }
   
   // 查看学生列表
@@ -443,22 +520,47 @@
     loadingStudents.value = false
   }
   
+
+
   // 下载学生提交的作业
-  const handleDownloadSubmission = (fileUrl) => {
-    var down_url = 'http://localhost:8080/api/assignments/download?fileUrl=' +fileUrl
+  const handleDownloadSubmission = (student) => {
+    if (!currentAssignment.value) {
+      ElMessage.error('无法获取作业信息')
+      return
+    }
+    
+    const downloadUrl = `http://localhost:8080/api/assignments/${currentAssignment.value.id}/download/${student.id}`
     axios({
-      url: down_url,
+      url: downloadUrl,
       method: 'GET',
-      responseType: 'blob'
+      responseType: 'blob',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
     }).then((response) => {
       const href = URL.createObjectURL(response.data);
       const link = document.createElement('a');
       link.href = href;
-      link.setAttribute('download', fileUrl);
+      
+      // 从响应头中获取文件名，如果没有则使用默认格式
+      const contentDisposition = response.headers['content-disposition'];
+      let fileName = `${student.username}-${currentAssignment.value.title}.pdf`; // 默认文件名
+      
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (fileNameMatch) {
+          fileName = fileNameMatch[1];
+        }
+      }
+      
+      link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(href);
+    }).catch(error => {
+      console.error('下载失败:', error);
+      ElMessage.error('下载失败，请重试');
     });
   }
   
@@ -696,4 +798,27 @@
   .student-table {
     margin-top: 0;
   }
+  
+  /* 确保表单元素正确显示 */
+  .el-form-item {
+    margin-bottom: 20px;
+  }
+  
+  .el-date-picker {
+    width: 100%;
+  }
+  
+  .el-select {
+    width: 100%;
+  }
+  
+  .el-input {
+    width: 100%;
+  }
+  
+  .el-textarea {
+    width: 100%;
+  }
+
+
   </style>

@@ -10,6 +10,7 @@ import StudentManagement from '../views/teacher/StudentManagement.vue'
 import AssignmentManagement from '../views/teacher/AssignmentManagement.vue'
 import StudentHome from '../views/student/Home.vue'
 import StudentAssignmentManagement from '../views/student/AssignmentManagement.vue'
+import StudentClassAssignments from '../views/student/ClassAssignments.vue'
 import TeacherLayout from '../views/teacher/TeacherLayout.vue'
 
 const router = createRouter({
@@ -33,7 +34,8 @@ const router = createRouter({
     {
       path: '/resources',
       name: 'resources',
-      component: Resources
+      component: Resources,
+      meta: { requiresAuth: true }
     },
     {
       path: '/login',
@@ -91,6 +93,12 @@ const router = createRouter({
       path: '/student/assignments',
       name: 'student-assignments',
       component: StudentAssignmentManagement,
+      meta: { requiresAuth: true, requiresStudent: true }
+    },
+    {
+      path: '/student/class/:classId',
+      name: 'student-class',
+      component: StudentClassAssignments,
       meta: { requiresAuth: true, requiresStudent: true }
     }
   ]

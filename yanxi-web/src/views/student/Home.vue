@@ -30,68 +30,49 @@
             <p>You haven't joined any classes yet</p>
             <p class="empty-tip">Enter a class code to join a new class</p>
           </div>
-          <div v-else class="class-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>班级名称</th>
-                  <th>班级代码</th>
-                  <th>教师</th>
-                  <!-- <th>学生人数</th> -->
-                  <!-- <th>创建时间</th> -->
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="classItem in classes" :key="classItem.id">
-                  <td>{{ classItem.name }}</td>
-                  <td>{{ classItem.code }}</td>
-                  <td>{{ classItem.teacherName }}</td>
-                  <!-- <td>{{ classItem.studentCount }}</td> -->
-                  <!-- <td>{{ classItem.createdAt }}</td> -->
-                  <td>
-                    <button class="action-btn view" @click="viewClassDetails(classItem)">
-                      <i class="fas fa-eye"></i> 查看详情
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div v-else class="class-cards">
+            <div 
+              v-for="classItem in classes" 
+              :key="classItem.id" 
+              class="class-card"
+              @click="enterClass(classItem)"
+            >
+              <div class="card-header">
+                <div class="class-info">
+                  <h3 class="class-name">{{ classItem.name }}</h3>
+                  <p class="teacher-name">{{ classItem.teacherName }}</p>
+                </div>
+                <div class="class-icon">
+                  <i class="fas fa-book"></i>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="class-details">
+                  <div class="detail-item">
+                    <span class="label">班级代码:</span>
+                    <span class="value">{{ classItem.code }}</span>
+                  </div>
+                  <div class="detail-item" v-if="classItem.description">
+                    <span class="label">描述:</span>
+                    <span class="value">{{ classItem.description }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <div class="assignment-count">
+                  <i class="fas fa-file-alt"></i>
+                  <span>点击查看作业</span>
+                </div>
+                <div class="enter-arrow">
+                  <i class="fas fa-arrow-right"></i>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
   
-      <!-- Class Details Modal -->
-      <div v-if="showDetailsModal" class="modal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3>Class Details</h3>
-            <button class="close-btn" @click="closeDetailsModal">×</button>
-          </div>
-          <div v-if="selectedClass" class="class-details">
-            <div class="detail-group">
-              <label>Class Name</label>
-              <p>{{ selectedClass.name }}</p>
-            </div>
-            <div class="detail-group">
-              <label>Class Code</label>
-              <p>{{ selectedClass.code }}</p>
-            </div>
-            <div class="detail-group">
-              <label>Teacher</label>
-              <p>{{ selectedClass.teacherName }}</p>
-            </div>
-            <div class="detail-group">
-              <label>Students</label>
-              <p>{{ selectedClass.studentCount }}</p>
-            </div>
-            <div class="detail-group">
-              <label>Created</label>
-              <p>{{ selectedClass.createdAt }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+
     </div>
   </template>
   
@@ -109,8 +90,6 @@
   const classes = ref([])
   const loading = ref(true)
   const classCode = ref('')
-  const showDetailsModal = ref(false)
-  const selectedClass = ref(null)
   
   const fetchClasses = async () => {
     try {
@@ -174,14 +153,13 @@
     }
   }
   
-  const viewClassDetails = (classItem) => {
-    selectedClass.value = classItem
-    showDetailsModal.value = true
-  }
-  
-  const closeDetailsModal = () => {
-    showDetailsModal.value = false
-    selectedClass.value = null
+  const enterClass = (classItem) => {
+    // Navigate to class-specific assignment view
+    router.push({
+      name: 'student-class',
+      params: { classId: classItem.id },
+      query: { className: classItem.name, teacherName: classItem.teacherName }
+    })
   }
   
   const goToAssignments = () => {
@@ -282,141 +260,118 @@
   
   .class-grid {
     width: 100%;
+    padding: 0 20px;
   }
   
-  .class-table {
+  .class-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 24px;
+    padding: 20px 0;
+  }
+  
+  .class-card {
     background: white;
     border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    margin: 0 20px;
-    width: calc(100% - 40px);
-  }
-  
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-  }
-  
-  th, td {
-    padding: 15px 20px;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-  }
-  
-  th:nth-child(1) { width: 25%; }  /* 班级名称 */
-  th:nth-child(2) { width: 15%; }  /* 班级代码 */
-  th:nth-child(3) { width: 15%; }  /* 教师 */
-  th:nth-child(4) { width: 10%; }  /* 学生人数 */
-  th:nth-child(5) { width: 15%; }  /* 创建时间 */
-  th:nth-child(6) { width: 20%; }  /* 操作 */
-  
-  td {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  /* 设置不同列的对齐方式 */
-  th:nth-child(4), td:nth-child(4) {  /* 学生人数 */
-    text-align: center;
-  }
-  
-  th:nth-child(5), td:nth-child(5) {  /* 创建时间 */
-    text-align: center;
-  }
-  
-  th:nth-child(6), td:nth-child(6) {  /* 操作 */
-    text-align: center;
-  }
-  
-  th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-    color: #2c3e50;
-  }
-  
-  tr:hover {
-    background-color: #f8f9fa;
-  }
-  
-  .action-btn {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-weight: bold;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    border: 2px solid transparent;
   }
   
-  .action-btn.view {
-    background: #E3F2FD;
-    color: #1976D2;
+  .class-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    border-color: #4CAF50;
   }
   
-  .action-btn.view:hover {
-    background: #BBDEFB;
-  }
-  
-  .modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .modal-content {
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 600px;
-  }
-  
-  .modal-header {
+  .card-header {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    padding: 20px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+    align-items: flex-start;
   }
   
-  .close-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #666;
+  .class-info {
+    flex: 1;
+  }
+  
+  .class-name {
+    margin: 0 0 8px 0;
+    font-size: 1.4rem;
+    font-weight: bold;
+  }
+  
+  .teacher-name {
+    margin: 0;
+    font-size: 1rem;
+    opacity: 0.9;
+  }
+  
+  .class-icon {
+    font-size: 2rem;
+    opacity: 0.8;
+  }
+  
+  .card-body {
+    padding: 20px;
   }
   
   .class-details {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 12px;
   }
   
-  .detail-group {
-    margin-bottom: 15px;
+  .detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
   
-  .detail-group label {
-    display: block;
-    font-weight: bold;
-    color: #2c3e50;
-    margin-bottom: 5px;
-  }
-  
-  .detail-group p {
-    margin: 0;
+  .label {
+    font-weight: 600;
     color: #666;
+    font-size: 0.9rem;
+  }
+  
+  .value {
+    color: #333;
+    font-weight: 500;
+    background: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  
+  .card-footer {
+    padding: 16px 20px;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #eee;
+  }
+  
+  .assignment-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #666;
+    font-size: 0.9rem;
+  }
+  
+  .enter-arrow {
+    color: #4CAF50;
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+  }
+  
+  .class-card:hover .enter-arrow {
+    transform: translateX(4px);
   }
   
   .loading {
