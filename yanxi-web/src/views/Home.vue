@@ -3,8 +3,8 @@
     <h1>言磎精品课堂</h1>
     <p class="subtitle">快乐学习语文数学！</p>
     <div class="btn-group">
-      <button class="btn btn-white">查看课程</button>
-      <button class="btn btn-black">联系我们</button>
+      <button class="btn btn-white" @click="goToCourses">查看课程</button>
+      <button class="btn btn-black" @click="goToContact">联系我们</button>
     </div>
   </div>
   <!-- 新增特色区块 -->
@@ -47,11 +47,24 @@
       </div>
       <a class="course-link" href="#">View Course Details →</a>
     </div>
-    <button class="all-courses-btn">查看所有课程 <span style="font-size:1.2em;">&gt;</span></button>
+    <button class="all-courses-btn" @click="goToCourses">查看所有课程 <span style="font-size:1.2em;">&gt;</span></button>
   </div>
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const goToCourses = () => {
+  router.push('/courses')
+}
+
+const goToContact = () => {
+  // You can either navigate to a contact page or scroll to contact section
+  // For now, I'll navigate to the about page as there's no contact route
+  router.push('/about')
+}
 </script>
 
 <style scoped>

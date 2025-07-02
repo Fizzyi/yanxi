@@ -43,4 +43,12 @@ public interface AssignmentSubmissionMapper extends BaseMapper<AssignmentSubmiss
      */
     @Update("UPDATE assignment_submission SET file_url = #{fileUrl}, submitted_at = #{submittedAt} WHERE assignment_id = #{assignmentId} AND student_id = #{studentId}")
     int updateByAssignmentIdAndStudentId(@Param("assignmentId") Long assignmentId, @Param("studentId") Long studentId, @Param("fileUrl") String fileUrl, @Param("submittedAt") java.time.LocalDateTime submittedAt);
+
+    /**
+     * 删除作业的所有提交记录
+     * @param assignmentId 作业ID
+     * @return 影响的行数
+     */
+    @Delete("DELETE FROM assignment_submission WHERE assignment_id = #{assignmentId}")
+    int deleteByAssignmentId(@Param("assignmentId") Long assignmentId);
 } 

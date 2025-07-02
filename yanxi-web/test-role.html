@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Role Test</title>
+</head>
+<body>
+    <h1>Role Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Test the role comparison logic
+        function testRole(userRole, expectedResult) {
+            const isTeacher = userRole && userRole.toUpperCase() === 'TEACHER';
+            const isStudent = userRole && userRole.toUpperCase() === 'STUDENT';
+            
+            console.log(`Testing role: "${userRole}"`);
+            console.log(`Is Teacher: ${isTeacher}`);
+            console.log(`Is Student: ${isStudent}`);
+            console.log('---');
+            
+            return { userRole, isTeacher, isStudent };
+        }
+        
+        // Test cases
+        const testCases = [
+            'teacher',    // lowercase (from database)
+            'TEACHER',    // uppercase (expected in frontend)
+            'student',    // lowercase (from database)
+            'STUDENT',    // uppercase (expected in frontend)
+            null,         // no role
+            undefined,    // undefined role
+            ''            // empty role
+        ];
+        
+        const results = testCases.map(role => testRole(role));
+        
+        // Display results
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '<pre>' + JSON.stringify(results, null, 2) + '</pre>';
+        
+        // Test localStorage simulation
+        localStorage.setItem('userRole', 'teacher'); // Simulate database value
+        const storedRole = localStorage.getItem('userRole');
+        console.log('Stored role:', storedRole);
+        console.log('Is Teacher (stored):', storedRole && storedRole.toUpperCase() === 'TEACHER');
+    </script>
+</body>
+</html> 

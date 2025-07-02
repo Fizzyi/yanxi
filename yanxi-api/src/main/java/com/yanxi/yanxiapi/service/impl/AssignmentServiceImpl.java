@@ -13,8 +13,13 @@ import com.yanxi.yanxiapi.service.UserService;
 import com.yanxi.yanxiapi.service.ClassService;
 import com.yanxi.yanxiapi.utils.FileUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import io.micrometer.core.annotation.Timed;
 
 import java.time.LocalDateTime;
 import java.io.IOException;
@@ -24,20 +29,32 @@ import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.Objects;
 import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.CacheManager;
+import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.context.ApplicationEventPublisher;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AssignmentServiceImpl extends ServiceImpl<AssignmentMapper, Assignment> implements AssignmentService {
 
     private final ClassStudentMapper classStudentMapper;
     private final UserService userService;
     private final AssignmentSubmissionMapper assignmentSubmissionMapper;
     private final ClassService classService;
+    private final CacheManager cacheManager;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
+    @Timed(value = "assignment.get.assignments", description = "Time taken to get assignments")
+    @Cacheable(value = "assignments", key = "'teacher_' + #teacher.id + '_class_' + (#classId ?: 'all') + '_student_' + (#studentEmail ?: 'all')")
     public List<Assignment> getAssignments(Long classId, String studentEmail, User teacher) {
+        log.debug("Getting assignments for teacher: {}, classId: {}, studentEmail: {}", teacher.getId(), classId, studentEmail);
+        
         LambdaQueryWrapper<Assignment> queryWrapper = new LambdaQueryWrapper<>();
 
         // 只查询当前教师的作业
@@ -69,43 +86,61 @@ public class AssignmentServiceImpl extends ServiceImpl<AssignmentMapper, Assignm
 
         List<Assignment> assignments = list(queryWrapper);
         
+        // 批量获取班级名称 - 优化N+1查询问题
+        List<Long> classIds = assignments.stream()
+                .map(Assignment::getClassId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        Map<Long, String> classNamesMap = classService.getClassNamesMap(classIds);
+        
         // 为每个作业添加 className 字段
         assignments.forEach(assignment -> {
-            classService.getClassById(assignment.getClassId())
-                .ifPresentOrElse(
-                    classEntity -> assignment.setClassName(classEntity.getName()),
-                    () -> assignment.setClassName("未知班级")
-                );
+            String className = classNamesMap.get(assignment.getClassId());
+            assignment.setClassName(className != null ? className : "未知班级");
         });
 
         return assignments;
     }
 
     @Override
+    @Timed(value = "assignment.create", description = "Time taken to create assignment")
+    @CacheEvict(value = {"assignments", "classNames"}, allEntries = true)
     public Assignment createAssignment(Long classId, String title, String description, MultipartFile file, LocalDateTime dueDate, User teacher) {
+        log.info("Creating assignment for class: {}, teacher: {}", classId, teacher.getId());
+        
         try {
-            // 保存文件并获取文件路径
-            String fileUrl = FileUtils.saveFile(file);
-
             Assignment assignment = new Assignment();
             assignment.setClassId(classId);
             assignment.setTitle(title);
             assignment.setDescription(description);
-            assignment.setFileUrl(fileUrl);
             assignment.setDueDate(dueDate);
             assignment.setTeacherId(teacher.getId());
             assignment.setCreatedAt(LocalDateTime.now());
-            assignment.setUpdatedAt(LocalDateTime.now());
+
+            // Handle file upload if provided
+            if (file != null && !file.isEmpty()) {
+                String fileUrl = FileUtils.saveFile(file);
+                assignment.setFileUrl(fileUrl);
+            }
 
             save(assignment);
+            log.info("Assignment created successfully with ID: {}", assignment.getId());
             return assignment;
-        } catch (IOException e) {
-            throw new RuntimeException("文件上传失败: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to create assignment", e);
+            throw new RuntimeException("创建作业失败: " + e.getMessage());
         }
     }
 
+
+
     @Override
+    @Timed(value = "assignment.get.students", description = "Time taken to get assignment students")
+    @Cacheable(value = "assignments", key = "'students_' + #assignmentId")
     public List<User> getAssignmentStudents(Long assignmentId) {
+        log.debug("Getting students for assignment: {}", assignmentId);
+        
         // 1. 获取作业信息
         Assignment assignment = getById(assignmentId);
         if (assignment == null) {
@@ -118,34 +153,36 @@ public class AssignmentServiceImpl extends ServiceImpl<AssignmentMapper, Assignm
             return Collections.emptyList();
         }
 
-        // 3. 获取所有学生的提交记录
+        // 3. 批量获取所有提交记录 - 优化查询
         List<AssignmentSubmission> submissions = assignmentSubmissionMapper.selectByAssignmentId(assignmentId);
         Map<Long, AssignmentSubmission> submissionMap = submissions.stream()
                 .collect(Collectors.toMap(AssignmentSubmission::getStudentId, submission -> submission));
 
-        // 4. 获取学生详细信息并添加提交信息
-        return studentIds.stream()
-                .map(studentId -> {
-                    User student = userService.getById(studentId);
-                    if (student != null) {
-                        AssignmentSubmission submission = submissionMap.get(studentId);
-                        if (submission != null) {
-                            student.setSubmitted(true);
-                            student.setSubmittedAt(submission.getSubmittedAt());
-                            student.setSubmissionId(submission.getId());
-                            student.setSubmissionFileUrl(submission.getFileUrl());
-                        } else {
-                            student.setSubmitted(false);
-                        }
-                    }
-                    return student;
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        // 4. 批量获取学生详细信息 - 消除N+1查询问题
+        List<User> students = classService.getUsersByIds(studentIds);
+        
+        // 5. 添加提交信息
+        students.forEach(student -> {
+            AssignmentSubmission submission = submissionMap.get(student.getId());
+            if (submission != null) {
+                student.setSubmitted(true);
+                student.setSubmittedAt(submission.getSubmittedAt());
+                student.setSubmissionId(submission.getId());
+                student.setSubmissionFileUrl(submission.getFileUrl());
+            } else {
+                student.setSubmitted(false);
+            }
+        });
+
+        return students;
     }
 
     @Override
+    @Timed(value = "assignment.get.student.assignments", description = "Time taken to get student assignments")
+    @Cacheable(value = "assignments", key = "'student_' + #student.id + '_submitted_' + (#submitted ?: 'all')")
     public List<Assignment> getStudentAssignments(Boolean submitted, User student) {
+        log.debug("Getting assignments for student: {}, submitted filter: {}", student.getId(), submitted);
+        
         // 1. 获取学生所在的所有班级ID
         List<Long> studentClassIds = classStudentMapper.selectClassIdsByStudentId(student.getId());
         if (studentClassIds.isEmpty()) {
@@ -162,26 +199,26 @@ public class AssignmentServiceImpl extends ServiceImpl<AssignmentMapper, Assignm
             return Collections.emptyList();
         }
 
-        // 4. 获取所有作业ID
-        List<Long> assignmentIds = assignments.stream()
-                .map(Assignment::getId)
-                .collect(Collectors.toList());
-
-        // 5. 查询学生已提交的作业ID
+        // 4. 批量查询学生已提交的作业ID - 优化查询
         List<Long> submittedAssignmentIds = baseMapper.selectSubmittedAssignmentIds(student.getId());
 
-        // 6. 为每个作业添加 submitted 字段
+        // 5. 为每个作业添加 submitted 字段
         assignments.forEach(assignment -> {
             assignment.setSubmitted(submittedAssignmentIds.contains(assignment.getId()));
         });
 
+        // 6. 批量获取班级名称 - 优化N+1查询问题
+        List<Long> classIds = assignments.stream()
+                .map(Assignment::getClassId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        Map<Long, String> classNamesMap = classService.getClassNamesMap(classIds);
+        
         // 7. 为每个作业添加 className 字段
         assignments.forEach(assignment -> {
-            classService.getClassById(assignment.getClassId())
-                .ifPresentOrElse(
-                    classEntity -> assignment.setClassName(classEntity.getName()),
-                    () -> assignment.setClassName("未知班级")
-                );
+            String className = classNamesMap.get(assignment.getClassId());
+            assignment.setClassName(className != null ? className : "未知班级");
         });
 
         // 8. 如果指定了提交状态，进行过滤
@@ -450,6 +487,55 @@ public class AssignmentServiceImpl extends ServiceImpl<AssignmentMapper, Assignm
         result.put("originalFileName", originalFileName);
 
         return result;
+    }
+
+    @Override
+    @Transactional
+    public void deleteAssignment(Long assignmentId, User teacher) {
+        log.info("Deleting assignment: {} by teacher: {}", assignmentId, teacher.getId());
+        
+        // 1. 获取作业信息
+        Assignment assignment = getById(assignmentId);
+        if (assignment == null) {
+            throw new RuntimeException("作业不存在");
+        }
+        
+        // 2. 检查权限：只有作业的创建者（教师）才能删除
+        if (!assignment.getTeacherId().equals(teacher.getId())) {
+            throw new RuntimeException("您没有权限删除此作业");
+        }
+        
+        // 3. 删除所有相关的作业提交记录
+        int submissionsDeleted = assignmentSubmissionMapper.deleteByAssignmentId(assignmentId);
+        log.info("Deleted {} assignment submissions for assignment {}", submissionsDeleted, assignmentId);
+        
+        // 4. 删除作业本身
+        boolean deleted = removeById(assignmentId);
+        log.info("Assignment {} deletion result: {}", assignmentId, deleted);
+        
+        if (!deleted) {
+            throw new RuntimeException("删除作业失败");
+        }
+        
+        // 5. Manually clear cache after transaction commits
+        clearAssignmentCache();
+        
+        log.info("Assignment {} deleted successfully", assignmentId);
+    }
+
+    private void clearAssignmentCache() {
+        try {
+            if (cacheManager.getCache("assignments") != null) {
+                cacheManager.getCache("assignments").clear();
+                log.info("Assignments cache cleared manually");
+            }
+            if (cacheManager.getCache("classNames") != null) {
+                cacheManager.getCache("classNames").clear();
+                log.info("ClassNames cache cleared manually");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to clear cache manually: {}", e.getMessage());
+        }
     }
 
     /**

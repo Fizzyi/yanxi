@@ -477,9 +477,9 @@ onMounted(fetchAssignments)
 }
 
 .class-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
   align-items: center;
-  gap: 20px;
   margin-bottom: 30px;
   padding: 20px;
   background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
@@ -496,10 +496,16 @@ onMounted(fetchAssignments)
   border-radius: 8px;
   transition: all 0.3s;
   background: rgba(255, 255, 255, 0.1);
+  justify-self: start;
 }
 
 .back-button:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.class-info {
+  text-align: center;
+  justify-self: center;
 }
 
 .class-info h1 {

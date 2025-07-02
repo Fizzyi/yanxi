@@ -30,7 +30,7 @@ public class User {
     /**
      * 用户类型：STUDENT-学生，TEACHER-教师
      */
-    @TableField("role")
+    @TableField(value = "role")
     private String userType;
 
     /**
@@ -45,11 +45,7 @@ public class User {
     @TableField("email")
     private String email;
 
-    /**
-     * 手机号
-     */
-    @TableField("phone")
-    private String phone;
+
 
     /**
      * 创建时间

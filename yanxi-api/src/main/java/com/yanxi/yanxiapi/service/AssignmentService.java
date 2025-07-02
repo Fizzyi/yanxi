@@ -88,4 +88,11 @@ public interface AssignmentService extends IService<Assignment> {
      * @return 下载信息
      */
     Map<String, Object> getAssignmentFileForDownload(Long assignmentId, User student);
+
+    /**
+     * 删除作业
+     * @param assignmentId 作业ID
+     * @param teacher 当前登录的教师
+     */
+    void deleteAssignment(Long assignmentId, User teacher);
 } 

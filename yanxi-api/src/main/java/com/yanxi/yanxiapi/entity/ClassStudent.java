@@ -25,14 +25,8 @@ public class ClassStudent {
     private Long studentId;
 
     /**
-     * 创建时间
+     * 加入时间
      */
-    @TableField(fill = FieldFill.INSERT)
-    private Date createdAt;
-
-    /**
-     * 更新时间
-     */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private Date updatedAt;
+    @TableField(value = "joined_at", fill = FieldFill.INSERT)
+    private Date joinedAt;
 } 

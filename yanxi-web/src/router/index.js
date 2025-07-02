@@ -8,6 +8,8 @@ import SignUp from '../views/SignUp.vue'
 import ClassManagement from '../views/teacher/ClassManagement.vue'
 import StudentManagement from '../views/teacher/StudentManagement.vue'
 import AssignmentManagement from '../views/teacher/AssignmentManagement.vue'
+import TeacherHome from '../views/teacher/Home.vue'
+import TeacherClassView from '../views/teacher/ClassView.vue'
 import StudentHome from '../views/student/Home.vue'
 import StudentAssignmentManagement from '../views/student/AssignmentManagement.vue'
 import StudentClassAssignments from '../views/student/ClassAssignments.vue'
@@ -50,32 +52,14 @@ const router = createRouter({
     {
       path: '/teacher',
       name: 'teacher',
-      component: TeacherLayout,
-      meta: { requiresAuth: true, requiresTeacher: true },
-      children: [
-        {
-          path: '',
-          redirect: { name: 'class-management' }
-        },
-        {
-          path: 'classes',
-          name: 'class-management',
-          component: ClassManagement,
-          meta: { requiresAuth: true, requiresTeacher: true }
-        },
-        {
-          path: 'students',
-          name: 'student-management',
-          component: StudentManagement,
-          meta: { requiresAuth: true, requiresTeacher: true }
-        },
-        {
-          path: 'assignments',
-          name: 'assignment-management',
-          component: AssignmentManagement,
-          meta: { requiresAuth: true, requiresTeacher: true }
-        }
-      ]
+      component: TeacherHome,
+      meta: { requiresAuth: true, requiresTeacher: true }
+    },
+    {
+      path: '/teacher/class/:classId',
+      name: 'teacher-class',
+      component: TeacherClassView,
+      meta: { requiresAuth: true, requiresTeacher: true }
     },
     {
       path: '/student',
@@ -112,10 +96,10 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !token) {
     // 需要登录但未登录，重定向到登录页
     next({ name: 'login' })
-  } else if (to.meta.requiresTeacher && userRole !== 'TEACHER') {
+  } else if (to.meta.requiresTeacher && (!userRole || userRole.toUpperCase() !== 'TEACHER')) {
     // 需要教师权限但不是教师，重定向到首页
     next({ name: 'home' })
-  } else if (to.meta.requiresStudent && userRole !== 'STUDENT') {
+  } else if (to.meta.requiresStudent && (!userRole || userRole.toUpperCase() !== 'STUDENT')) {
     // 需要学生权限但不是学生，重定向到首页
     next({ name: 'home' })
   } else {

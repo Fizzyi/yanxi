@@ -73,11 +73,13 @@ const handleSubmit = async () => {
     
     // 根据身份跳转
     setTimeout(() => {
-      if (response.data.userRole === 'TEACHER') {
-        window.location.href = '/teacher/classes'
+      if (response.data.userRole && response.data.userRole.toUpperCase() === 'TEACHER') {
+        router.push('/teacher')
       } else {
-        window.location.href = '/student/home'
+        router.push('/student/home')
       }
+      // Trigger a storage event to update navigation
+      window.dispatchEvent(new Event('storage'))
     }, 1500)
   } catch (err) {
     error.value = err.response?.data?.error || 'Login failed. Please try again.'

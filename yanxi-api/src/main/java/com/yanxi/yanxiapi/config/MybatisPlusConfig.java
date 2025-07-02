@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInt
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import org.apache.ibatis.reflection.MetaObject;
 import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -17,6 +18,7 @@ import java.util.Date;
 
 @Configuration
 @EnableTransactionManagement
+@EnableCaching
 @MapperScan("com.yanxi.yanxiapi.mapper")
 public class MybatisPlusConfig {
 

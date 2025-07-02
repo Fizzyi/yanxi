@@ -56,12 +56,6 @@ public class Assignment {
     private LocalDateTime createdAt;
 
     /**
-     * 更新时间
-     */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updatedAt;
-
-    /**
      * 是否已提交（非数据库字段）
      */
     @TableField(exist = false)

@@ -1,18 +1,31 @@
 <script setup>
 import Footer from './components/Footer.vue'
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const isLoggedIn = ref(false)
 const userRole = ref('')
 
-onMounted(() => {
-  // 检查本地存储中是否有token和用户角色
+const updateAuthState = () => {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('userRole')
   isLoggedIn.value = !!token
   userRole.value = role || ''
+  console.log('Auth state updated:', { isLoggedIn: isLoggedIn.value, userRole: userRole.value })
+}
+
+onMounted(() => {
+  updateAuthState()
+  
+  // Listen for storage changes (when user logs in from another tab)
+  window.addEventListener('storage', updateAuthState)
+})
+
+// Watch for route changes to update auth state
+watch(() => route.path, () => {
+  updateAuthState()
 })
 
 const handleLogout = () => {
@@ -44,8 +57,8 @@ const handleLogout = () => {
             <router-link class="nav-btn nav-signup" to="/signup">Sign Up</router-link>
           </template>
           <template v-else>
-            <router-link v-if="userRole === 'TEACHER'" class="nav-btn nav-teacher" to="/teacher">Teacher Zone</router-link>
-            <router-link v-if="userRole === 'STUDENT'" class="nav-btn nav-student" to="/student">Student Zone</router-link>
+            <router-link v-if="userRole && userRole.toUpperCase() === 'TEACHER'" class="nav-btn nav-teacher" to="/teacher">Teacher Zone</router-link>
+            <router-link v-if="userRole && userRole.toUpperCase() === 'STUDENT'" class="nav-btn nav-student" to="/student">Student Zone</router-link>
             <button class="nav-btn nav-logout" @click="handleLogout">Logout</button>
           </template>
         </div>
