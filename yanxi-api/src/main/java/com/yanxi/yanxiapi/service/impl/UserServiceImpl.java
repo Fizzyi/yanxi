@@ -42,7 +42,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new UsernameNotFoundException("User not found with username: " + username);
         }
         List<GrantedAuthority> authorities = Arrays.asList(
-            new SimpleGrantedAuthority("ROLE_" + user.getUserType()));
+            new SimpleGrantedAuthority("ROLE_" + user.getUserType().toUpperCase()));
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
                 .password(user.getPassword())
@@ -79,10 +79,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = new User();
         user.setUsername(registerDTO.getUsername());
         user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
-        user.setUserType(registerDTO.getUserType());
+        user.setUserType(registerDTO.getUserType().toLowerCase()); // Convert to lowercase for database
         user.setRealName(registerDTO.getRealName());
         user.setEmail(registerDTO.getEmail());
-        user.setPhone(registerDTO.getPhone());
 
         // 保存用户
         save(user);
@@ -117,15 +116,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
             throw new RuntimeException("密码错误");
         }
+        
+        // Debug logging
+        System.out.println("DEBUG: User found - ID: " + user.getId() + ", Username: " + user.getUsername() + ", UserType: " + user.getUserType());
+        
         String token = jwtUtils.generateToken(user);
         Map<String, String> response = new HashMap<>();
         response.put("token", token);
-        response.put("userRole", user.getUserType());
+        response.put("userRole", user.getUserType() != null ? user.getUserType().toUpperCase() : "NULL"); // Convert to uppercase for frontend
+        response.put("realName", user.getRealName());
+        
+        // Debug logging
+        System.out.println("DEBUG: Login response - userRole: " + response.get("userRole"));
+        
         return response;
     }
 
     @Override
     public User getByEmail(String email) {
-        return null;
+        return userMapper.findByEmail(email);
     }
 } 

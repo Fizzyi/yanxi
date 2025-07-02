@@ -1,7 +1,13 @@
 <template>
   <div class="student-management">
     <div class="header-actions">
-      <h2></h2>
+      <div class="header-info">
+        <h2>Student Management</h2>
+        <p v-if="selectedClass" class="help-text">
+          <i class="fas fa-info-circle"></i>
+          Select a specific class to remove students from that class
+        </p>
+      </div>
       <div class="filters">
         <select v-model="selectedClass" @change="handleClassChange" class="class-select">
           <option value="">All Classes</option>
@@ -46,6 +52,13 @@
                 </button>
                 <button class="action-btn edit" @click="editStudent(student)">
                   <i class="fas fa-edit"></i> Edit
+                </button>
+                <button 
+                  v-if="selectedClass" 
+                  class="action-btn remove" 
+                  @click="removeStudentFromClass(student)"
+                >
+                  <i class="fas fa-user-minus"></i> Remove
                 </button>
               </td>
             </tr>
@@ -127,6 +140,8 @@
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useRoute } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import 'element-plus/dist/index.css'
 
 const route = useRoute()
 const students = ref([])
@@ -231,6 +246,44 @@ const handleClassChange = () => {
   fetchStudents()
 }
 
+const removeStudentFromClass = async (student) => {
+  if (!selectedClass.value) {
+    ElMessage.warning('Please select a class first')
+    return
+  }
+
+  const className = classes.value.find(c => c.id === parseInt(selectedClass.value))?.name || 'this class'
+  
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to remove ${student.realName} from ${className}?`,
+      'Remove Student',
+      {
+        confirmButtonText: 'Remove',
+        cancelButtonText: 'Cancel',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+
+    await axios.delete(`http://localhost:8080/api/classes/${selectedClass.value}/students/${student.id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    
+    ElMessage.success(`${student.realName} has been removed from ${className}`)
+    await fetchStudents() // Refresh the student list
+  } catch (error) {
+    if (error === 'cancel') {
+      // User cancelled the operation
+      return
+    }
+    console.error('Error removing student from class:', error)
+    ElMessage.error('Failed to remove student from class. Please try again.')
+  }
+}
+
 const closeDetailsModal = () => {
   showDetailsModal.value = false
   selectedStudent.value = null
@@ -262,8 +315,26 @@ onMounted(() => {
 .header-actions {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 30px;
+}
+
+.header-info h2 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+}
+
+.help-text {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.help-text i {
+  color: #4CAF50;
 }
 
 .filters {
@@ -350,6 +421,15 @@ tr:hover {
 
 .action-btn.edit:hover {
   background: #C8E6C9;
+}
+
+.action-btn.remove {
+  background: #FFEBEE;
+  color: #D32F2F;
+}
+
+.action-btn.remove:hover {
+  background: #FFCDD2;
 }
 
 .modal {

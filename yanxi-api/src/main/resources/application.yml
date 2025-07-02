@@ -3,26 +3,66 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://121.43.238.143:8036/yanxi?useSSL=true&serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
-    username: yanxi
-    password: yanxi123
+    url: jdbc:mysql://localhost:3306/yanxi?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    username: root
+    password: Ming080329@
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      # Connection pool settings optimized for performance
+      maximum-pool-size: 25
+      minimum-idle: 10
+      connection-timeout: 20000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      # Connection validation
+      connection-test-query: SELECT 1
+      validation-timeout: 3000
+      # Performance optimizations
+      auto-commit: true
+      connection-init-sql: SET SESSION sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO'
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+  # Cache configuration
+  cache:
+    type: simple
+    cache-names: users,classes,assignments,classNames
+    simple:
+      # Cache entries expire after 5 minutes
+      spec: maximumSize=1000,expireAfterWrite=5m
 
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # Disable SQL logging in production for better performance
+    # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    cache-enabled: true
+    lazy-loading-enabled: true
+    multiple-result-sets-enabled: true
+    use-column-label: true
+    use-generated-keys: true
+    default-executor-type: REUSE
+    default-statement-timeout: 25000
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.yanxi.yanxiapi.entity
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
 
 logging:
   level:
-    org.springframework.security: DEBUG
-    com.yanxi.yanxiapi: DEBUG
+    # Reduce logging in production for better performance
+    org.springframework.security: WARN
+    com.yanxi.yanxiapi: INFO
+    com.zaxxer.hikari: WARN
+    com.zaxxer.hikari.HikariConfig: WARN
+    com.zaxxer.hikari.pool.HikariPool: WARN
+    # SQL logging - disable in production
+    # com.yanxi.yanxiapi.mapper: DEBUG
 
 file:
   upload-dir: ./uploads/homework 

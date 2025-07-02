@@ -6,6 +6,7 @@ import com.yanxi.yanxiapi.entity.ClassStudent;
 import com.yanxi.yanxiapi.entity.User;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -65,4 +66,21 @@ public interface ClassService extends IService<ClassEntity> {
      * @return 学生列表
      */
     List<User> getTeacherAllStudents(User teacher, String email, Long classId);
+
+    /**
+     * 批量获取班级信息 - 性能优化方法
+     */
+    List<ClassEntity> getClassesByIds(List<Long> classIds);
+
+    /**
+     * 批量获取班级名称映射 - 专门用于性能优化
+     * @param classIds 班级ID列表
+     * @return Map<classId, className>
+     */
+    Map<Long, String> getClassNamesMap(List<Long> classIds);
+
+    /**
+     * 批量获取用户信息 - 性能优化方法
+     */
+    List<User> getUsersByIds(List<Long> userIds);
 }

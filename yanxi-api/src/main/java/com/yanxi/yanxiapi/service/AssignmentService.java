@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface AssignmentService extends IService<Assignment> {
     /**
@@ -46,4 +47,52 @@ public interface AssignmentService extends IService<Assignment> {
      * @return 更新后的作业信息
      */
     Assignment submitAssignment(Long assignmentId, MultipartFile file, User student);
+
+    /**
+     * 学生取消提交作业
+     * @param assignmentId 作业ID
+     * @param student 当前登录的学生
+     */
+    void unsubmitAssignment(Long assignmentId, User student);
+
+    /**
+     * 学生更新作业提交
+     * @param assignmentId 作业ID
+     * @param file 新的作业文件
+     * @param student 当前登录的学生
+     * @return 更新后的作业信息
+     */
+    Assignment updateSubmission(Long assignmentId, MultipartFile file, User student);
+
+    /**
+     * 获取学生的作业提交详情
+     * @param assignmentId 作业ID
+     * @param student 当前登录的学生
+     * @return 提交详情
+     */
+    Map<String, Object> getSubmissionDetails(Long assignmentId, User student);
+
+    /**
+     * 教师下载学生作业提交
+     * @param assignmentId 作业ID
+     * @param studentId 学生ID
+     * @param teacher 当前登录的教师
+     * @return 下载信息
+     */
+    Map<String, Object> getStudentSubmissionForDownload(Long assignmentId, Long studentId, User teacher);
+
+    /**
+     * 学生下载作业文件
+     * @param assignmentId 作业ID
+     * @param student 当前登录的学生
+     * @return 下载信息
+     */
+    Map<String, Object> getAssignmentFileForDownload(Long assignmentId, User student);
+
+    /**
+     * 删除作业
+     * @param assignmentId 作业ID
+     * @param teacher 当前登录的教师
+     */
+    void deleteAssignment(Long assignmentId, User teacher);
 } 

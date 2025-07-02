@@ -32,8 +32,5 @@ public class UserRegisterDTO {
      */
     private String email;
 
-    /**
-     * 手机号
-     */
-    private String phone;
+
 } 

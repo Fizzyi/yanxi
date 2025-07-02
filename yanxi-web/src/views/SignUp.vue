@@ -2,7 +2,7 @@
   <div class="auth-container">
     <div class="auth-box">
       <h1 class="auth-title">Sign Up</h1>
-      <div class="auth-subtitle">Create a student account to upload documents.</div>
+      <div class="auth-subtitle">Create your account to get started.</div>
       <form class="auth-form" @submit.prevent="handleSubmit">
         <label class="auth-label">Full Name</label>
         <input 
@@ -20,6 +20,15 @@
           v-model="formData.email"
           required
         />
+        <label class="auth-label">Account Type</label>
+        <select 
+          class="auth-select" 
+          v-model="formData.userType"
+          required
+        >
+          <option value="STUDENT">Student</option>
+          <option value="TEACHER">Teacher</option>
+        </select>
         <label class="auth-label">Password</label>
         <input 
           class="auth-input" 
@@ -89,13 +98,22 @@ const handleSubmit = async () => {
     // 设置用户名（使用邮箱作为用户名）
     formData.username = formData.email
 
+    // 确保用户类型为大写
+    formData.userType = formData.userType.toUpperCase()
+
     loading.value = true
     
+    // 根据用户类型选择注册接口
+    const endpoint = formData.userType === 'TEACHER' 
+      ? 'http://localhost:8080/api/users/register/teacher'
+      : 'http://localhost:8080/api/users/register/student'
+    
     // 调用注册接口
-    const response = await axios.post('http://localhost:8080/api/users/register/student', formData)
+    const response = await axios.post(endpoint, formData)
     
     // 显示成功消息
-    success.value = 'Registration successful! Redirecting to login page...'
+    const roleText = formData.userType === 'TEACHER' ? 'teacher' : 'student'
+    success.value = `${roleText.charAt(0).toUpperCase() + roleText.slice(1)} account created successfully! Redirecting to login page...`
     
     // 3秒后跳转到登录页
     setTimeout(() => {
@@ -152,7 +170,8 @@ const handleSubmit = async () => {
   display: block;
   font-weight: bold;
 }
-.auth-input {
+.auth-input,
+.auth-select {
   width: 100%;
   padding: 8px 10px;
   border: 1.5px solid #e5e7eb;
@@ -161,9 +180,14 @@ const handleSubmit = async () => {
   margin-bottom: 0px;
   outline: none;
   transition: border 0.2s;
+  background-color: white;
 }
-.auth-input:focus {
+.auth-input:focus,
+.auth-select:focus {
   border-color: #111;
+}
+.auth-select {
+  cursor: pointer;
 }
 .auth-btn {
   width: 100%;

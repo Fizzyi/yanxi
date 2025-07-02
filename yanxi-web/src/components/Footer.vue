@@ -46,8 +46,9 @@
   position: relative;
   left: 50%;
   right: 50%;
-  transform: translateX(-50%);
-  margin-top: 80px;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  margin-top: auto;
   box-shadow: 0 -2px 16px 0 rgba(0,0,0,0.08);
 }
 .footer-main {

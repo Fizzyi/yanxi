@@ -15,7 +15,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -39,21 +41,52 @@ public class ClassController {
     @GetMapping("/student")
     public ResponseEntity<List<ClassDTO>> getStudentClasses(@AuthenticationPrincipal User student) {
         List<ClassStudent> classStudents = classService.getClassesByStudent(student);
-        List<ClassDTO> classDTOs = classStudents.stream()
-                .map(cs -> classService.getClassById(cs.getClassId())
-                        .map(this::convertToDTO)
-                        .orElse(null))
-                .filter(dto -> dto != null)
+        
+        if (classStudents.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+        
+        // 批量获取班级信息 - 优化N+1查询问题
+        List<Long> classIds = classStudents.stream()
+                .map(ClassStudent::getClassId)
                 .collect(Collectors.toList());
+        
+        List<ClassEntity> classes = classService.getClassesByIds(classIds);
+        
+        // 转换为DTO
+        List<ClassDTO> classDTOs = classes.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+                
         return ResponseEntity.ok(classDTOs);
     }
 
     @PostMapping
-    public ResponseEntity<ClassDTO> createClass(
+    public ResponseEntity<?> createClass(
             @RequestBody CreateClassRequest request,
             @AuthenticationPrincipal User teacher) {
-        ClassEntity classEntity = classService.createClass(request.getName(), teacher);
-        return ResponseEntity.ok(convertToDTO(classEntity));
+        try {
+            System.out.println("DEBUG: Create class request - Name: " + request.getName());
+            System.out.println("DEBUG: Teacher from @AuthenticationPrincipal: " + teacher);
+            
+            if (teacher == null) {
+                System.out.println("DEBUG: Teacher is null, authentication failed");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Authentication failed"));
+            }
+            
+            System.out.println("DEBUG: Teacher ID: " + teacher.getId() + ", Username: " + teacher.getUsername());
+            
+            ClassEntity classEntity = classService.createClass(request.getName(), teacher);
+            System.out.println("DEBUG: Class created successfully - ID: " + classEntity.getId());
+            
+            return ResponseEntity.ok(convertToDTO(classEntity));
+        } catch (Exception e) {
+            System.out.println("DEBUG: Error creating class: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to create class: " + e.getMessage()));
+        }
     }
 
     @DeleteMapping("/{classId}")

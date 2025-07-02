@@ -33,8 +33,8 @@
           <div class="students">{{ classItem.studentCount }} Students</div>
           <!-- <div class="created">{{ classItem.createdAt }}</div> -->
           <div class="actions">
-            <button class="action-btn detail" @click="viewClassDetails(classItem)">
-              <i class="fas fa-list"></i> Detail
+            <button class="action-btn students" @click="manageStudents(classItem)">
+              <i class="fas fa-users"></i> Students
             </button>
             <button class="action-btn edit" @click="editClass(classItem)">
               <i class="fas fa-edit"></i> Edit
@@ -111,6 +111,15 @@
             ></textarea>
           </div>
           <div class="form-group">
+            <label>Due Date</label>
+            <input 
+              type="datetime-local" 
+              v-model="homeworkForm.dueDate" 
+              required
+              :min="new Date().toISOString().slice(0, 16)"
+            >
+          </div>
+          <div class="form-group">
             <label>Upload File</label>
             <input 
               type="file" 
@@ -128,6 +137,46 @@
         </form>
       </div>
     </div>
+
+    <!-- Manage Students Modal -->
+    <div v-if="showStudentsModal" class="modal">
+      <div class="modal-content large">
+        <div class="modal-header">
+          <h3>Manage Students - {{ selectedClass?.name }}</h3>
+          <button class="close-btn" @click="closeStudentsModal">×</button>
+        </div>
+        <div class="students-content">
+          <div v-if="loadingStudents" class="loading">Loading students...</div>
+          <div v-else-if="classStudents.length === 0" class="empty-state">
+            <i class="fas fa-users empty-icon"></i>
+            <p>No students in this class yet</p>
+            <p class="empty-tip">Students can join using class code: <strong>{{ selectedClass?.code }}</strong></p>
+          </div>
+          <div v-else class="students-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="student in classStudents" :key="student.id">
+                  <td>{{ student.realName }}</td>
+                  <td>{{ student.email }}</td>
+                  <td class="actions">
+                    <button class="action-btn remove" @click="removeStudentFromClass(student)">
+                      <i class="fas fa-user-minus"></i> Remove
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -135,14 +184,20 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import 'element-plus/dist/index.css'
 
 const router = useRouter()
 const classes = ref([])
 const loading = ref(true)
 const showAddClassModal = ref(false)
 const showAddHomeworkModal = ref(false)
+const showStudentsModal = ref(false)
 const uploading = ref(false)
 const editingClass = ref(null)
+const selectedClass = ref(null)
+const classStudents = ref([])
+const loadingStudents = ref(false)
 
 const classForm = ref({
   name: '',
@@ -153,6 +208,7 @@ const homeworkForm = ref({
   classId: '',
   title: '',
   description: '',
+  dueDate: '',
   file: null
 })
 
@@ -224,17 +280,65 @@ const closeModal = () => {
   }
 }
 
-const viewClassDetails = (classItem) => {
-  console.log('Attempting to navigate to student management with classId:', classItem.id)
-  router.push({
-    name: 'student-management',
-    params: {},
-    query: { classId: classItem.id }
-  }).catch(err => {
-    if (err.name !== 'NavigationDuplicated') {
-      console.error('Navigation error:', err)
+const manageStudents = async (classItem) => {
+  selectedClass.value = classItem
+  showStudentsModal.value = true
+  await fetchClassStudents(classItem.id)
+}
+
+const fetchClassStudents = async (classId) => {
+  try {
+    loadingStudents.value = true
+    const response = await axios.get('http://localhost:8080/api/classes/teacher/students', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      params: { classId }
+    })
+    classStudents.value = response.data
+  } catch (error) {
+    console.error('Error fetching class students:', error)
+    ElMessage.error('Failed to load students')
+  } finally {
+    loadingStudents.value = false
+  }
+}
+
+const removeStudentFromClass = async (student) => {
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to remove ${student.realName} from ${selectedClass.value.name}?`,
+      'Remove Student',
+      {
+        confirmButtonText: 'Remove',
+        cancelButtonText: 'Cancel',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+
+    await axios.delete(`http://localhost:8080/api/classes/${selectedClass.value.id}/students/${student.id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    
+    ElMessage.success(`${student.realName} has been removed from ${selectedClass.value.name}`)
+    await fetchClassStudents(selectedClass.value.id) // Refresh student list
+    await fetchClasses() // Refresh class list to update student count
+  } catch (error) {
+    if (error === 'cancel') {
+      return
     }
-  })
+    console.error('Error removing student from class:', error)
+    ElMessage.error('Failed to remove student from class. Please try again.')
+  }
+}
+
+const closeStudentsModal = () => {
+  showStudentsModal.value = false
+  selectedClass.value = null
+  classStudents.value = []
 }
 
 const handleFileUpload = (event) => {
@@ -248,6 +352,10 @@ const handleHomeworkSubmit = async () => {
     formData.append('classId', homeworkForm.value.classId)
     formData.append('title', homeworkForm.value.title)
     formData.append('description', homeworkForm.value.description)
+    
+    // Format due date for backend (ISO_LOCAL_DATE_TIME format)
+    const dueDateFormatted = homeworkForm.value.dueDate + ':00' // Add seconds
+    formData.append('dueDate', dueDateFormatted)
     formData.append('file', homeworkForm.value.file)
 
     await axios.post('http://localhost:8080/api/assignments', formData, {
@@ -273,6 +381,7 @@ const closeHomeworkModal = () => {
     classId: '',
     title: '',
     description: '',
+    dueDate: '',
     file: null
   }
 }
@@ -397,13 +506,13 @@ onMounted(fetchClasses)
   transition: all 0.2s;
 }
 
-.action-btn.detail {
-  background: #E3F2FD;
-  color: #1976D2;
+.action-btn.students {
+  background: #E8F5E9;
+  color: #388E3C;
 }
 
-.action-btn.detail:hover {
-  background: #BBDEFB;
+.action-btn.students:hover {
+  background: #C8E6C9;
 }
 
 .action-btn.edit {
@@ -519,5 +628,118 @@ input[type="file"] {
   border-radius: 6px;
   font-size: 1rem;
   background-color: white;
+}
+
+/* Students Modal Styles */
+.modal-content.large {
+  max-width: 800px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.students-content {
+  min-height: 300px;
+}
+
+.students-table {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  overflow: hidden;
+}
+
+.students-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.students-table th,
+.students-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.students-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.students-table tr:hover {
+  background-color: #f8f9fa;
+}
+
+.students-table .actions {
+  text-align: right;
+}
+
+.action-btn.remove {
+  background: #FFEBEE;
+  color: #D32F2F;
+  font-size: 0.85rem;
+  padding: 5px 10px;
+}
+
+.action-btn.remove:hover {
+  background: #FFCDD2;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.empty-icon {
+  font-size: 48px;
+  color: #ddd;
+  margin-bottom: 15px;
+}
+
+.empty-tip {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #999;
+}
+
+.empty-tip strong {
+  color: #4CAF50;
+  font-family: monospace;
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
 }
 </style> 
